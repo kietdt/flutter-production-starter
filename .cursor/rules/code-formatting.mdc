@@ -1,0 +1,31 @@
+---
+description: Always format Dart code after creating or modifying it
+globs: **/*.dart
+alwaysApply: false
+---
+# Code Formatting
+
+**Rule:** Always format Dart code after creating or modifying it. Code should adhere to standard Dart formatting rules (e.g., trailing commas for multiline formatting). Ensure you run the format command or ensure the generated code is well-formatted before considering a task complete.
+
+### ✅ Good Example
+```dart
+class UserEntity {
+  final String id;
+  final String email;
+
+  const UserEntity({
+    required this.id,
+    required this.email,
+  });
+}
+```
+
+### ❌ Bad Example
+```dart
+class UserEntity {
+  final String id;
+  final String email;
+
+  const UserEntity({required this.id,required this.email});
+}
+```

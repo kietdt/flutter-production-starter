@@ -1,0 +1,46 @@
+---
+description: Enforce named parameters for Class and Model Initialization in Dart
+globs: **/*.dart
+alwaysApply: false
+---
+# Class and Model Initialization
+
+**Rule:** Use named parameters when initializing ANY class, model, entity, exception, or failure. This applies to all constructors across the project.
+
+### ✅ Good Example
+```dart
+class UserModel {
+  final String id;
+  final String email;
+
+  const UserModel({required this.id, required this.email});
+}
+
+class ServerException implements Exception {
+  final String message;
+  ServerException({this.message = 'Server Exception'});
+}
+
+class ServerFailure extends Failure {
+  const ServerFailure({required super.message});
+}
+```
+
+### ❌ Bad Example
+```dart
+class UserModel {
+  final String id;
+  final String email;
+
+  const UserModel(this.id, this.email);
+}
+
+class ServerException implements Exception {
+  final String message;
+  ServerException([this.message = 'Server Exception']);
+}
+
+class ServerFailure extends Failure {
+  const ServerFailure(super.message);
+}
+```

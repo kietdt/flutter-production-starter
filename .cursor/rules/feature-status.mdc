@@ -1,0 +1,36 @@
+---
+description: Use a common FeatureStatus enum for state management across all screens
+globs: **/*.dart
+alwaysApply: false
+---
+# Standardized Feature Status
+
+**Rule:** Use a common `FeatureStatus` enum for state management across all screens. Do NOT create abstract status classes for each feature (like `AuthLoading`, `AuthSuccess`, etc.).
+
+### ✅ Good Example
+```dart
+// In core/utils/feature_status.dart
+enum FeatureStatus {
+  init,
+  loading,
+  success,
+  failure,
+  empty,
+}
+
+// In feature state
+class AuthState {
+  final FeatureStatus status;
+  final UserEntity? user;
+  
+  const AuthState({this.status = FeatureStatus.init, this.user});
+}
+```
+
+### ❌ Bad Example
+```dart
+abstract class AuthState {}
+class AuthInitial extends AuthState {}
+class AuthLoading extends AuthState {}
+class AuthSuccess extends AuthState { final UserEntity user; AuthSuccess(this.user); }
+```

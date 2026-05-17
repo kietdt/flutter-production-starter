@@ -1,0 +1,27 @@
+---
+description: Main screen file of a feature should be placed directly inside the feature's root folder
+globs: **/*.dart
+alwaysApply: false
+---
+# Main Screen Folder Placement
+
+**Rule:** The main screen file of a feature should be placed directly inside the feature's root folder. Do not create a separate `view` folder for it if it is the main screen.
+
+### ✅ Good Example
+```text
+lib/feature/login/
+├── login_page.dart       <-- Main screen directly in the feature root folder
+├── cubit/
+├── widget/
+└── di/
+```
+
+### ❌ Bad Example
+```text
+lib/feature/login/
+├── view/
+│   └── login_page.dart   <-- Placed inside a view folder
+├── cubit/
+├── widget/
+└── di/
+```

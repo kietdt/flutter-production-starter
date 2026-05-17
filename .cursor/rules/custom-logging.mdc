@@ -1,0 +1,28 @@
+---
+description: Use custom AppLogger instead of print() or dart:developer's log()
+globs: **/*.dart
+alwaysApply: false
+---
+# Custom Logging
+
+**Rule:** Never use `print()` or `dart:developer`'s `log()` directly in feature or domain code. Always use the custom `AppLogger` utility defined in `lib/core/utils/app_logger.dart` to maintain a unified logging interface across the application.
+
+### ✅ Good Example
+```dart
+import '../../../core/utils/app_logger.dart';
+
+void someFunction() {
+  AppLogger.info('This is an info message', name: 'SomeFeature');
+  AppLogger.error('This is an error', error: e, name: 'SomeFeature');
+}
+```
+
+### ❌ Bad Example
+```dart
+import 'dart:developer';
+
+void someFunction() {
+  print('This is a print message'); // Bad: Uses print
+  log('This is a log message', name: 'SomeFeature'); // Bad: Uses raw dart:developer log
+}
+```

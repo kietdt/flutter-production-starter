@@ -1,0 +1,37 @@
+---
+description: Models must not extend Entities and must include a toEntity() method
+globs: **/*.dart
+alwaysApply: false
+---
+# Model and Entity Separation
+
+**Rule:** Models should NOT extend Entities. Models must be independent and include a `toEntity()` method to convert them to their corresponding Domain Entities.
+
+### ✅ Good Example
+```dart
+class UserModel {
+  final String id;
+  final String email;
+
+  const UserModel({required this.id, required this.email});
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(id: json['id'], email: json['email']);
+  }
+
+  UserEntity toEntity() {
+    return UserEntity(id: id, email: email);
+  }
+}
+```
+
+### ❌ Bad Example
+```dart
+class UserModel extends UserEntity {
+  const UserModel({required super.id, required super.email});
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(id: json['id'], email: json['email']);
+  }
+}
+```

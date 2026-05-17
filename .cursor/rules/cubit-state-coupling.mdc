@@ -1,0 +1,38 @@
+---
+description: Use part and part of to link Cubit and State files together
+globs: **/*.dart
+alwaysApply: false
+---
+# Cubit and State Files Coupling
+
+**Rule:** Use `part` and `part of` to link Cubit and State files together instead of regular imports. The Cubit file should declare `part 'feature_state.dart';` and house all the necessary imports, while the State file should declare `part of 'feature_cubit.dart';` and should not have any imports of its own.
+
+### ✅ Good Example
+```dart
+// In feature_cubit.dart
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../domain/entity/user_entity.dart';
+
+part 'feature_state.dart';
+
+class FeatureCubit extends Cubit<FeatureState> { ... }
+
+// In feature_state.dart
+part of 'feature_cubit.dart';
+
+class FeatureState { ... }
+```
+
+### ❌ Bad Example
+```dart
+// In feature_cubit.dart
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'feature_state.dart';
+
+class FeatureCubit extends Cubit<FeatureState> { ... }
+
+// In feature_state.dart
+import '../../../domain/entity/user_entity.dart';
+
+class FeatureState { ... }
+```
