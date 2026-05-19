@@ -1,0 +1,42 @@
+---
+description: Enum value mapping using switch cases
+globs: *.dart
+---
+
+# Enum Mapping
+
+**Rule:** When mapping enums to specific values (like strings or integers), do not use constructor parameters. Instead, use a getter with an exhaustive `switch` statement to return the corresponding values.
+
+### ✅ Good Example
+```dart
+enum NetworkErrorCode {
+  timeout,
+  badResponse,
+  cancelled;
+
+  String get errorCode {
+    switch (this) {
+      case NetworkErrorCode.timeout:
+        return 'timeout';
+      case NetworkErrorCode.badResponse:
+        return 'bad_response';
+      case NetworkErrorCode.cancelled:
+        return 'cancelled';
+    }
+  }
+}
+```
+
+### ❌ Bad Example
+```dart
+enum NetworkErrorCode {
+  timeout('timeout'),
+  badResponse('bad_response'),
+  cancelled('cancelled');
+
+  final String code;
+  const NetworkErrorCode(this.code);
+
+  String get errorCode => code;
+}
+```
