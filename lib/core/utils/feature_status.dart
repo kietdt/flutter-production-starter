@@ -1,5 +1,5 @@
-/// Feature Status enum to be used across different screens
-/// Responsibility: Represent the different states a feature can be in.
+// Feature Status enum to be used across different screens
+// Responsibility: Represent the different states a feature can be in.
 
 enum FeatureStatus {
   init,

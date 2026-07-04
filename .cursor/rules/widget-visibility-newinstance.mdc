@@ -1,0 +1,36 @@
+---
+description: Decide whether to render a Bloc-driven section in newInstance, not by returning SizedBox.shrink() inside build
+globs: **/*.dart
+alwaysApply: false
+---
+# Handle Widget Visibility in newInstance
+
+**Rule:** When a section can be fully hidden based on Bloc/Cubit state (e.g. the API returns empty), decide whether to build it inside the `newInstance` factory (using `Builder` + `context.watch`) instead of always building the widget and returning `SizedBox.shrink()` from its `build`. This avoids inserting an empty widget into the tree.
+
+### ❌ Bad Example
+```dart
+@override
+Widget build(BuildContext context) {
+  final state = context.watch<MyCubit>().state;
+  if (state.isEmpty) {
+    return const SizedBox.shrink(); // empty widget still mounted
+  }
+  return Column(...);
+}
+```
+
+### ✅ Good Example
+```dart
+static Widget newInstance({Key? key}) {
+  return BlocProvider<MyCubit>(
+    create: (_) => MyCubit()..init(),
+    child: Builder(
+      builder: (context) {
+        final state = context.watch<MyCubit>().state;
+        if (state.status.isSuccess) return MySection._(key: key);
+        return const SizedBox.shrink();
+      },
+    ),
+  );
+}
+```

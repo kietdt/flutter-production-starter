@@ -1,0 +1,31 @@
+---
+description: Build screens via static Widget newInstance() that sets up DI before creating the BlocProvider, not static Route route()
+globs: **/*.dart
+alwaysApply: false
+---
+# Screen Initialization With Injection
+
+**Rule:** Do not use the legacy `static Route route()` pattern. Expose the screen through a `static Widget newInstance()` factory. Call the feature's dependency-injection setup (if any) at the start of that method, before creating and returning the `BlocProvider`. This guarantees dependencies are registered before the Cubit/Bloc resolves them.
+
+### ❌ Bad Example
+```dart
+static Route route() {
+  return MaterialPageRoute(
+    builder: (_) => BlocProvider(
+      create: (_) => MyCubit(GetIt.I<MyUseCase>()),
+      child: const MyScreen._(),
+    ),
+  );
+}
+```
+
+### ✅ Good Example
+```dart
+static Widget newInstance() {
+  MyFeatureInjection.setup(GetIt.instance);
+  return BlocProvider(
+    create: (_) => MyCubit(GetIt.I<MyUseCase>()),
+    child: const MyScreen._(),
+  );
+}
+```

@@ -1,0 +1,33 @@
+---
+description: Split UI into small widgets each with its own BlocBuilder/buildWhen instead of one BlocBuilder over the whole screen
+globs: **/*.dart
+alwaysApply: false
+---
+# Granular BlocBuilders
+
+**Rule:** When a large widget depends on several different fields of the state, do not wrap the whole UI in a single `BlocBuilder` with a meaningless `buildWhen` (e.g. `previous != current`). That rebuilds the entire screen on any change. Split the UI into smaller widgets, each wrapped in its own `BlocBuilder` with a `buildWhen` that compares only the field it cares about.
+
+### ❌ Bad Example
+```dart
+BlocBuilder<MyCubit, MyState>(
+  buildWhen: (p, c) => p != c, // rebuilds everything
+  builder: (context, state) => Column(children: [
+    _tab(state.selectedTab),
+    _passengers(state.passengerCount),
+    _price(state.totalPrice),
+  ]),
+);
+```
+
+### ✅ Good Example
+```dart
+Column(children: [_TabSection(), _PassengerSection(), _PriceSection()]);
+
+class _PriceSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => BlocBuilder<MyCubit, MyState>(
+        buildWhen: (p, c) => p.totalPrice != c.totalPrice,
+        builder: (context, state) => Text('${state.totalPrice}'),
+      );
+}
+```

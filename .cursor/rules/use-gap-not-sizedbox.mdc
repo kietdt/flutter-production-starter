@@ -1,0 +1,30 @@
+---
+description: Use Gap(...) for spacing between widgets in Column/Row instead of SizedBox
+globs: **/*.dart
+alwaysApply: false
+---
+# Use Gap Instead of SizedBox for Spacing
+
+**Rule:** To keep code style consistent, use `Gap(...)` (from the `gap` package, already a dependency) to create spacing between widgets in a `Column` or `Row`, instead of `SizedBox(height: ...)` / `SizedBox(width: ...)`. `Gap` automatically infers the parent's axis.
+
+### ❌ Bad Example
+```dart
+Column(
+  children: [
+    Text('Title'),
+    SizedBox(height: 16),
+    Text('Description'),
+  ],
+)
+```
+
+### ✅ Good Example
+```dart
+Column(
+  children: [
+    Text('Title'),
+    Gap(16),
+    Text('Description'),
+  ],
+)
+```

@@ -1,0 +1,47 @@
+---
+description: Ensure JSON responses are parsed using strict models rather than raw Maps in the Repository
+globs: ["**/*_repository_impl.dart"]
+---
+# Repository JSON Parsing
+
+**Rule:** Repositories must not parse raw JSON data using `Map` keys directly (e.g. `response['key']`). Instead, they must delegate JSON parsing to Data Models using `.fromJson` methods. This ensures type safety and centralizes the mapping logic within the model layer.
+
+### ✅ Good Example
+```dart
+@override
+Future<UserEntity> login(String email, String password) async {
+  final response = await remoteDataSource.login(email, password);
+  
+  // Use a dedicated model to parse the entire response map
+  final authResponse = AuthResponseModel.fromJson(response);
+
+  if (authResponse.accessToken.isNotEmpty) {
+    await TokenManagement.instance.saveTokens(
+      accessToken: authResponse.accessToken,
+    );
+  }
+
+  return authResponse.user.toEntity();
+}
+```
+
+### ❌ Bad Example
+```dart
+@override
+Future<UserEntity> login(String email, String password) async {
+  final response = await remoteDataSource.login(email, password);
+  
+  // Bad: Parsing raw Map directly in the Repository
+  final accessToken = response['accessToken'] as String?;
+  final userMap = response['user'] as Map<String, dynamic>?;
+
+  if (accessToken != null) {
+    await TokenManagement.instance.saveTokens(
+      accessToken: accessToken,
+    );
+  }
+
+  final userModel = UserModel.fromJson(userMap ?? {});
+  return userModel.toEntity();
+}
+```

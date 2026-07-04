@@ -1,0 +1,35 @@
+---
+description: Put display formatting and fallback getters in State/Model/Entity, keeping widgets dumb
+globs: **/*.dart
+alwaysApply: false
+---
+# Keep Display Logic in State, Not in the Widget
+
+**Rule:** Functions that format data or compute a display/fallback value belong in the `State` (or Model/Entity) as getters, not as helper methods inside the Widget. A widget's only job is to build the UI tree. This keeps the UI file "dumb" and centralizes display logic in one place.
+
+### ❌ Bad Example
+```dart
+class MyWidget extends StatelessWidget {
+  String _displayName(MyState state) => state.selectedItem?.name ?? 'Not selected';
+
+  @override
+  Widget build(BuildContext context) => BlocBuilder<MyCubit, MyState>(
+        builder: (_, state) => Text(_displayName(state)),
+      );
+}
+```
+
+### ✅ Good Example
+```dart
+class MyState extends Equatable {
+  final ItemEntity? selectedItem;
+  String get displayName => selectedItem?.name ?? 'Not selected';
+}
+
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => BlocBuilder<MyCubit, MyState>(
+        builder: (_, state) => Text(state.displayName),
+      );
+}
+```

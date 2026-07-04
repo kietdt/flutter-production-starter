@@ -1,0 +1,27 @@
+---
+description: Use strong typing, safe casts and null checks; never invoke methods on dynamic, and fix linter warnings
+globs: **/*.dart
+alwaysApply: false
+---
+# Type Safety and Linter Cleanliness
+
+**Rule:** Do not access properties or call methods directly on a `dynamic` value without a type check. Cast explicitly, check for null, and resolve linter warnings (including redundant casts) so the codebase stays clean.
+
+### ❌ Bad Example
+```dart
+// Unnecessary cast warning
+final valid = all.where((e) => (e as RecentSearch).isValid).toList();
+
+// Method invocation on a dynamic target
+final id = raw['to']['id'];
+```
+
+### ✅ Good Example
+```dart
+// List<RecentSearch> is already correctly typed
+final valid = all.where((e) => e.isValid).toList();
+
+// Safe access
+final to = raw['to'] as Map?;
+final id = to != null ? to['id'] : '';
+```

@@ -1,0 +1,44 @@
+---
+description: Always parse JSON/Map values with the MapParser extension (map_ext.dart), never raw bracket access with manual casts
+globs: **/*.dart
+alwaysApply: false
+---
+# Use MapParser Extension for Safe JSON Parsing
+
+**Rule:** When parsing values out of a JSON/`Map` (typically in a Model's `fromJson`), always use the `MapParser` extension defined in `lib/core/utils/map_ext.dart` instead of raw bracket access with manual casts and null handling (`json['key'] as int? ?? 0`, `json['key']?.toString() ?? ''`). These helpers already handle type coercion, null safety and edge cases in one place.
+
+### Available helpers
+- Scalars: `parseInt`, `parseIntOrNull`, `parseDouble`, `parseDoubleOrNull`, `parseString`, `parseStringOrNull`, `parseBool`, `parseBoolOrNull`
+- Dates: `parseDate`, `parseDateISO8601`, `parseSecondToDate`
+- Nested map: `parseMap`, `parseMapOrNull`
+- Lists: `parseList<T>` / `parseListOrNull<T>` (with optional `converter`), `parseListMap`, `parseListMapOrNull`, `parseListString`, `parseListStringOrNull`
+- Generic fallback: `tryParseRaw<T>`
+
+Non-null variants accept an optional `defaultValue`; `*OrNull` variants return `null` when the key is missing or uncoercible.
+
+### ❌ Bad Example
+```dart
+factory UserModel.fromJson(Map<String, dynamic> json) {
+  return UserModel(
+    id: json['id'] as int? ?? 0,
+    email: json['email']?.toString() ?? '',
+    balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
+    tags: json['tags'] as List<dynamic>?,
+  );
+}
+```
+
+### ✅ Good Example
+```dart
+factory UserModel.fromJson(Map<dynamic, dynamic> json) {
+  return UserModel(
+    id: json.parseInt('id'),
+    email: json.parseString('email'),
+    balance: json.parseDouble('balance'),
+    tags: json.parseListOrNull<String>('tags'),
+  );
+}
+```
+
+### Note
+This complements the Repository JSON Parsing rule: repositories delegate parsing to Models via `.fromJson`, and inside those `fromJson` methods the parsing itself must go through `MapParser`.

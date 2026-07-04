@@ -1,0 +1,13 @@
+---
+description: Ensure the MEMORY.md file is kept up-to-date after significant changes
+globs: ["**/*"]
+---
+# Memory Update
+
+**Rule:** After completing a task or significant feature, you must always update the `MEMORY.md` file to reflect the current state of the project. This ensures the project context is maintained accurately for future tasks.
+
+### Instructions:
+1. Open `MEMORY.md` to review the current documented state.
+2. Update the "Current Progress" section to detail newly implemented features, APIs, or structural changes.
+3. Update the "Next Steps (To-Do for next session)" section, removing completed tasks and adding new ones if applicable.
+4. Keep the file concise but comprehensive enough to convey the architectural state and progress.

@@ -2,23 +2,41 @@
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    //
+    // Flavors are Dart-level (AppConfig) — each config picks the environment via
+    // its entry-point `program`. No native --flavor setup is required.
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "flutter-production-starter",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "flutter-production-starter (profile mode)",
+            "name": "Dev",
             "request": "launch",
             "type": "dart",
+            "program": "lib/main_dev.dart"
+        },
+        {
+            "name": "Dev (profile)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_dev.dart",
             "flutterMode": "profile"
         },
         {
-            "name": "flutter-production-starter (release mode)",
+            "name": "Staging",
             "request": "launch",
             "type": "dart",
+            "program": "lib/main_staging.dart"
+        },
+        {
+            "name": "Prod",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_prod.dart"
+        },
+        {
+            "name": "Prod (release)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_prod.dart",
             "flutterMode": "release"
         }
     ]

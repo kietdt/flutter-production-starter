@@ -1,0 +1,30 @@
+---
+description: Solve problems with the proper mechanism instead of UI hacks or abusing state to pass hidden params
+globs: **/*.dart
+alwaysApply: false
+---
+# Avoid UI Workarounds
+
+**Rule:** Do not use hacks such as constantly changing a `ValueKey` to force Flutter to rebuild the whole widget tree, or abusing Bloc/Cubit state to smuggle navigation parameters. Use the app's proper mechanisms (navigation/router, deep links, real state fields) instead.
+
+### ❌ Bad Example
+Inject a random/timestamp trigger into `ValueKey` just to force a rebuild:
+```dart
+SizedBox(
+  key: ValueKey('${type.code}_${state.triggerId}'), // hack to force rebuild
+  height: selected ? null : 0,
+)
+```
+
+### ✅ Good Example
+Keep a stable key and drive the flow through real navigation:
+```dart
+SizedBox(
+  key: ValueKey(type.code),
+  height: selected ? null : 0,
+)
+
+void _onItemTap(RecentSearch item) {
+  context.pushNamed(AppRoutes.route, queryParameters: item.toQueryParams());
+}
+```

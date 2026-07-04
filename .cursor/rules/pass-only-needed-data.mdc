@@ -1,0 +1,29 @@
+---
+description: Methods should accept only the data they use, not the whole Bloc/Cubit state object
+globs: **/*.dart
+alwaysApply: false
+---
+# Pass Only What a Method Needs
+
+**Rule:** When writing a helper method, declare parameters for exactly the data it uses (e.g. `List<TicketEntity> tickets`) instead of accepting the whole Bloc/Cubit `State` and reaching into its fields. Passing the entire `State` couples the method to the full state shape, hurts reuse and testability, and hides what the method actually needs. If another field is required, read it directly from `context.read<Cubit>().state` inside the method or add that specific parameter.
+
+### ❌ Bad Example
+```dart
+void _syncTabs(TicketDetailState state) {
+  final tickets = state.tickets;
+  if (tickets.isEmpty) return;
+}
+
+_syncTabs(context.read<TicketDetailCubit>().state);
+```
+
+### ✅ Good Example
+```dart
+void _syncTabs(List<TicketEntity> tickets) {
+  if (tickets.isEmpty) return;
+  final int? selectedId =
+      context.read<TicketDetailCubit>().state.selectedTicketId;
+}
+
+_syncTabs(context.read<TicketDetailCubit>().state.tickets);
+```

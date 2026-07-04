@@ -1,0 +1,57 @@
+---
+description: All screen navigation must be declared in the Coordinator, never with Navigator/MaterialPageRoute inside features or widgets
+globs: lib/**/*.dart
+alwaysApply: false
+---
+# Navigation via Coordinator
+
+**Rule:** Screen navigation is declared in **one place** —
+`lib/core/coordinator/coordinator.dart`. `Navigator.` and `MaterialPageRoute`
+may appear **only** inside `lib/core/coordinator/`. Features, pages and widgets
+must express intent by calling a `Coordinator` method, never by constructing
+routes or calling `Navigator` directly.
+
+### Why
+- One source of truth for routes and transitions.
+- Features don't depend on routing mechanics — they just say "go here".
+- Migrating to a router (e.g. `go_router`) touches only the Coordinator; every
+  call site stays unchanged.
+
+### How it works
+`Coordinator` exposes intent-named static methods that take a `BuildContext`:
+
+```dart
+abstract final class Coordinator {
+  static Future<void> openDevTools(BuildContext context) =>
+      _push(context, (_) => const DevToolsGalleryPage());
+
+  static void pop<T>(BuildContext context, [T? result]) =>
+      Navigator.of(context).pop(result);
+
+  static Future<T?> _push<T>(BuildContext context, WidgetBuilder builder) =>
+      Navigator.of(context).push<T>(MaterialPageRoute<T>(builder: builder));
+}
+```
+
+### ✅ Good — feature calls the Coordinator
+```dart
+// in a page/widget
+onTap: () => Coordinator.openDevTools(context),
+onPressed: () => Coordinator.pop(context),
+```
+
+### ❌ Bad — navigation declared inside a feature
+```dart
+// in a page/widget — NOT allowed
+Navigator.of(context).push(
+  MaterialPageRoute(builder: (_) => const DevToolsGalleryPage()),
+);
+Navigator.pop(context);
+```
+
+### Notes
+- Add a new destination by adding a method to `Coordinator` (and importing the
+  target page there) — do not push it from the feature.
+- Flutter overlay helpers (`showDialog`, `showModalBottomSheet`,
+  `Scaffold.of(context).openDrawer()`) are allowed in widgets since they are not
+  `Navigator` calls, but **dismiss them with `Coordinator.pop(context)`**.

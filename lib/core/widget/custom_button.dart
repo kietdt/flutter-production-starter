@@ -1,7 +1,7 @@
-/// Core Widget Module
-/// Responsibility: House globally shared, reusable UI components.
-///
-/// Examples: Custom buttons, text fields, loading indicators.
+// Core Widget Module
+// Responsibility: House globally shared, reusable UI components.
+//
+// Examples: Custom buttons, text fields, loading indicators.
 
 import 'package:flutter/material.dart';
 

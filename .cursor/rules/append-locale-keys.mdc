@@ -1,0 +1,23 @@
+---
+description: Add new localization keys at the end of locale files to minimize merge conflicts
+globs: lib/core/localization/**/*.dart
+alwaysApply: false
+---
+# Append New Locale Keys at the End
+
+**Rule:** When adding a new text/key to localization files (e.g. `app_language.dart`, `en.dart`, `vi.dart`), always append it at the **end** of the file (before the closing `}`) instead of inserting it between existing keys. This greatly reduces merge conflicts when multiple people add strings in parallel.
+
+### ❌ Bad Example
+```dart
+  String get totalAmount;
+  String get totalPrice; // inserted in the middle
+  String get buyTicket;
+```
+
+### ✅ Good Example
+```dart
+  String get totalTicketPrice;
+  String get discount;
+  String get totalPrice; // appended at the end
+}
+```

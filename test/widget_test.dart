@@ -1,30 +1,44 @@
-// This is a basic Flutter widget test.
+// Smoke test for the application bootstrap + go_router auth guard.
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Verifies the redirect drives the start screen: no token -> LoginPage; a stored
+// access token -> HomePage.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:flutter_production_starter/core/di/di.dart';
+import 'package:flutter_production_starter/core/local_storage/shared_prefs_manager.dart';
 import 'package:flutter_production_starter/main.dart';
 
+Future<void> _boot(WidgetTester tester, Map<String, Object> prefs) async {
+  SharedPreferences.setMockInitialValues(prefs);
+  await SharedPrefsManager.instance.init();
+  initDI();
+  await tester.pumpWidget(const MyApp());
+  await tester.pumpAndSettle();
+}
+
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  tearDown(() {
+    sl.reset();
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  testWidgets('redirects to LoginPage when unauthenticated', (tester) async {
+    await _boot(tester, {});
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // LoginPage shows the login form fields and a Login action.
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
+    expect(find.text('Login'), findsWidgets);
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('redirects to HomePage when an access token is present',
+      (tester) async {
+    await _boot(tester, {'access_token': 'valid-token'});
+
+    // HomePage chrome is shown; the login form is gone.
+    expect(find.text('Home'), findsWidgets);
+    expect(find.text('Navigation'), findsOneWidget);
+    expect(find.text('Email'), findsNothing);
   });
 }

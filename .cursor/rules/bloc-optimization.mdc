@@ -1,0 +1,41 @@
+---
+description: Ensure optimal rebuilds/listens by always using buildWhen and listenWhen in BlocBuilder/BlocListener
+globs: ["**/*.dart"]
+---
+# Bloc Builder and Listener Optimization
+
+**Rule:** Always use `buildWhen` and `listenWhen` when using `BlocBuilder`, `BlocListener`, or `BlocConsumer`. This prevents unnecessary widget rebuilds or side-effect triggers when unrelated parts of the state change.
+
+### ✅ Good Example
+```dart
+BlocBuilder<AuthCubit, AuthState>(
+  buildWhen: (previous, current) => previous.status != current.status,
+  builder: (context, state) {
+    return Text(state.status.toString());
+  },
+)
+
+BlocListener<LoginCubit, LoginState>(
+  listenWhen: (previous, current) => previous.status != current.status,
+  listener: (context, state) {
+    // Handle state change
+  },
+  child: const LoginForm(),
+)
+```
+
+### ❌ Bad Example
+```dart
+BlocBuilder<AuthCubit, AuthState>(
+  builder: (context, state) {
+    return Text(state.status.toString());
+  },
+)
+
+BlocListener<LoginCubit, LoginState>(
+  listener: (context, state) {
+    // Handle state change
+  },
+  child: const LoginForm(),
+)
+```

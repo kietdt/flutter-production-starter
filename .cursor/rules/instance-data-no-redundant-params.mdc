@@ -1,0 +1,32 @@
+---
+description: If data already belongs to the instance, do not require the caller to pass it back in
+globs: **/*.dart
+alwaysApply: false
+---
+# Do Not Pass Instance Data Back Into Its Own Methods
+
+**Rule:** When a method on a class/model formats or computes something from the object's own fields, use the instance variables directly (ideally as a `get` property) instead of accepting them as parameters. If the data already belongs to the instance, the caller should not have to pass it back.
+
+### ❌ Bad Example
+```dart
+class RecentSearch {
+  final DateTime departureDate;
+
+  String formatDate(DateTime date) => '${date.day}/${date.month}';
+}
+
+// Caller passes the instance's own field back into it
+final display = item.formatDate(item.departureDate);
+```
+
+### ✅ Good Example
+```dart
+class RecentSearch {
+  final DateTime departureDate;
+
+  String get departureDateDisplay =>
+      '${departureDate.day}/${departureDate.month}';
+}
+
+final display = item.departureDateDisplay;
+```

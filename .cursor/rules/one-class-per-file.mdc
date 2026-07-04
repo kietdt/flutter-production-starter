@@ -1,0 +1,30 @@
+---
+description: One top-level class per file; move non-widget helper classes (Clipper/Painter/Delegate) to their own file
+globs: **/*.dart
+alwaysApply: false
+---
+# One Top-level Class Per File
+
+**Rule:** Do not put multiple top-level classes in one file. Non-widget helper classes such as `CustomClipper`, `CustomPainter`, `Delegate`, or plain helpers must live in their **own file** rather than being appended below the widget that uses them. This keeps files small, searchable, reusable and testable.
+
+Not in conflict with related rules: tiny presentational pieces may stay as private `_build` methods; a Cubit's `State` is split via `part`/`part of`; an enum tied to a State may stay in the state file.
+
+### ❌ Bad Example
+```dart
+// ongoing_ticket_item.dart
+class OngoingTicketItem extends StatelessWidget { ... }
+class _TicketStubClipper extends CustomClipper<Path> { ... } // 2 top-level classes
+```
+
+### ✅ Good Example
+```dart
+// ticket_stub_clipper.dart
+class TicketStubClipper extends CustomClipper<Path> { ... }
+
+// ongoing_ticket_item.dart
+import 'ticket_stub_clipper.dart';
+class OngoingTicketItem extends StatelessWidget { /* uses TicketStubClipper */ }
+```
+
+### ⚠️ Exception
+If the helper serves **only one** widget and is not reused, it may stay `private` (name starting with `_`) in the **same file** as that widget. Only extract it to its own public file once it is reused elsewhere.

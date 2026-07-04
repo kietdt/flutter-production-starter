@@ -1,0 +1,39 @@
+---
+description: Compare enum states via boolean getters, not direct equality
+globs: *.dart
+---
+
+# Enum Boolean Getters
+
+**Rule:** Do not compare an enum value against a specific case with `==` at the
+call site. Instead, define `bool get isX` getters inside the enum (one per case)
+and compare through them. This keeps comparison logic encapsulated in the enum,
+reads naturally, and makes call sites resilient if cases are renamed.
+
+### ✅ Good Example
+```dart
+enum AppAuthStatus {
+  initial,
+  authenticated,
+  unauthenticated;
+
+  bool get isInitial => this == AppAuthStatus.initial;
+  bool get isAuthenticated => this == AppAuthStatus.authenticated;
+  bool get isUnauthenticated => this == AppAuthStatus.unauthenticated;
+}
+
+// call site
+final loggedIn = authCubit.state.status.isAuthenticated;
+```
+
+### ❌ Bad Example
+```dart
+enum AppAuthStatus {
+  initial,
+  authenticated,
+  unauthenticated,
+}
+
+// call site
+final loggedIn = authCubit.state.status == AppAuthStatus.authenticated;
+```

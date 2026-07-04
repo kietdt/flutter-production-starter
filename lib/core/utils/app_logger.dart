@@ -1,7 +1,7 @@
-/// Core Logger Module
-/// Responsibility: Provide a unified logging interface for the entire application.
-///
-/// Replaces the default print() and developer.log().
+// Core Logger Module
+// Responsibility: Provide a unified logging interface for the entire application.
+//
+// Replaces the default print() and developer.log().
 
 import 'dart:developer' as developer;
 

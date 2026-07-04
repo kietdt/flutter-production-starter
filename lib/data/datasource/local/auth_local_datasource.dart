@@ -1,5 +1,5 @@
-/// Data Local Datasource Module
-/// Responsibility: Handle local storage operations (SharedPreferences, Hive, SQLite).
+// Data Local Datasource Module
+// Responsibility: Handle local storage operations (SharedPreferences, Hive, SQLite).
 
 abstract class AuthLocalDataSource {
   Future<void> cacheUserToken(String token);

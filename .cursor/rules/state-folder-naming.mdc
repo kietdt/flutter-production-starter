@@ -1,0 +1,29 @@
+---
+description: Name the state-management folder cubit/ for Cubit and bloc/ for Bloc, and separate UI, state and logic
+globs: **/*.dart
+alwaysApply: false
+---
+# State Management Folder Naming
+
+**Rule:** When a feature contains real logic, separate UI, Bloc/Cubit and State into their own files. Name the folder that holds the state-management classes according to what is used:
+- If a `Cubit` is used, name the folder `cubit/`.
+- If a `Bloc` is used, name the folder `bloc/`.
+
+Do not put the Bloc/State/Widget in one file, and do not name a folder `bloc/` while it contains a Cubit.
+
+### ❌ Bad Example
+```text
+lib/feature/home/widget/recent_search/
+  ├── bloc/                       # folder says bloc/ ...
+  │   ├── recent_search_cubit.dart  # ... but it holds a Cubit
+  │   └── recent_search_state.dart
+```
+
+### ✅ Good Example
+```text
+lib/feature/home/recent_search/
+  ├── cubit/
+  │   ├── recent_search_cubit.dart
+  │   └── recent_search_state.dart
+  └── recent_search_section.dart
+```

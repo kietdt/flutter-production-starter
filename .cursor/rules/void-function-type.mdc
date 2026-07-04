@@ -1,0 +1,22 @@
+---
+description: Declare function types that return nothing with an explicit void
+globs: **/*.dart
+alwaysApply: false
+---
+# Declare Function Types With void
+
+**Rule:** When declaring a variable, parameter, or field whose type is a function that returns nothing, put `void` before `Function`. This avoids linter warnings and makes the intent explicit (a bare `Function(...)` returns `dynamic`).
+
+### ❌ Bad Example
+```dart
+final Function(TransportCode?)? onNavigate;
+
+void doSomething(Function(String) callback) {}
+```
+
+### ✅ Good Example
+```dart
+final void Function(TransportCode?)? onNavigate;
+
+void doSomething(void Function(String) callback) {}
+```

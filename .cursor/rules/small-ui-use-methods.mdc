@@ -1,0 +1,39 @@
+---
+description: For tiny non-reused UI pieces prefer a private _build method over a separate StatelessWidget class
+globs: **/*.dart
+alwaysApply: false
+---
+# Prefer Private Build Methods for Tiny UI Pieces
+
+**Rule:** When a small UI component serves only the current widget and is not reused anywhere else, prefer a private `_buildX(...)` method returning a `Widget` inside the parent class rather than extracting a separate `StatelessWidget`. Extracting a class for something used once adds redundant internal classes and fragments closely-related build logic.
+
+Note: this concerns tiny presentational pieces. Non-widget helper classes (`CustomClipper`, `CustomPainter`, `Delegate`) still follow the one-class-per-file rule.
+
+### ❌ Bad Example
+```dart
+class GuideList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => ListView.builder(
+        itemBuilder: (_, i) => _StepItem(index: i),
+      );
+}
+
+class _StepItem extends StatelessWidget { // used once, still a class
+  final int index;
+  const _StepItem({required this.index});
+  @override
+  Widget build(BuildContext context) => Text('Step $index');
+}
+```
+
+### ✅ Good Example
+```dart
+class GuideList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => ListView.builder(
+        itemBuilder: (context, i) => _buildStepItem(context, i),
+      );
+
+  Widget _buildStepItem(BuildContext context, int index) => Text('Step $index');
+}
+```

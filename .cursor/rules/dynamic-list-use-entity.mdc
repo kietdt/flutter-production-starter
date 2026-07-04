@@ -1,0 +1,33 @@
+---
+description: Render dynamic/data-driven lists from domain Entities, not hardcoded enums
+globs: **/*.dart
+alwaysApply: false
+---
+# Use Entities (Not Hardcoded Enums) for Dynamic UI Lists
+
+**Rule:** When rendering a list of options that actually depends on the API or can change over time (routes, seats, services, etc.), do not model it as a hardcoded `enum`. Hardcoding forces an app release whenever the server adds an option. Instead create an Entity model in `domain/`, store a `List<Entity>` in the Cubit/Bloc state (loaded from API or mock), and render from that list. Reserve enums for genuinely fixed, client-known sets.
+
+### ❌ Bad Example
+```dart
+enum MyLine { lineA, lineB }
+
+extension MyLineX on MyLine {
+  String get title => this == MyLine.lineA ? 'Line A' : 'Line B';
+}
+
+Row(children: MyLine.values.map((e) => Text(e.title)).toList());
+```
+
+### ✅ Good Example
+```dart
+class LineEntity extends Equatable {
+  final String id;
+  final String title;
+  const LineEntity({required this.id, required this.title});
+  @override
+  List<Object?> get props => [id, title];
+}
+
+// state holds List<LineEntity> availableLines, rendered via BlocBuilder
+Row(children: state.availableLines.map((e) => Text(e.title)).toList());
+```

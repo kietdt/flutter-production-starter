@@ -1,0 +1,20 @@
+---
+description: Declare explicit types for non-obvious local variables instead of letting final/var infer them
+globs: **/*.dart
+alwaysApply: false
+---
+# Explicit Types for Non-Obvious Local Variables
+
+**Rule:** When a local variable's type is not obvious from the right-hand side (results of conditionals, `.first`, `.firstWhere`, nullable expressions), declare the type explicitly (including `?` when nullable) instead of relying on `final`/`var` inference. This makes the code self-documenting and avoids accidental wrong inference (e.g. `dynamic` or an unexpected supertype).
+
+### ❌ Bad Example
+```dart
+final firstTicket =
+    (tickets != null && tickets!.isNotEmpty) ? tickets!.first : null;
+```
+
+### ✅ Good Example
+```dart
+final TicketModel? firstTicket =
+    (tickets != null && tickets!.isNotEmpty) ? tickets!.first : null;
+```
