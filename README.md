@@ -136,7 +136,7 @@ lib/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Flutter SDK `3.6.2+` (Dart `3.6+`)
+- Flutter SDK `3.27.4` (Dart `3.6.2`)
 - A running backend exposing `/auth/login` and `/auth/refresh`
 
 ### Setup
