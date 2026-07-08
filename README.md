@@ -30,25 +30,25 @@ Clean Architecture with a one-way dependency flow — outer layers depend inward
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  FEATURE (UI)                                                 │
+│  FEATURE (UI)                                                │
 │  Pages • Widgets • Cubits (LoginCubit, HomeCubit)            │
 │  Renders state, dispatches intents.                          │
 └───────────────────────────────┬──────────────────────────────┘
-                                 │ calls
+                                │ calls
 ┌───────────────────────────────▼──────────────────────────────┐
-│  DOMAIN (business rules)                                      │
+│  DOMAIN (business rules)                                     │
 │  Entities • Repository interfaces • UseCases                 │
 │  Pure Dart, no Flutter / no Dio.                             │
 └───────────────────────────────┬──────────────────────────────┘
-                                 │ implemented by
+                                │ implemented by
 ┌───────────────────────────────▼──────────────────────────────┐
-│  DATA                                                         │
+│  DATA                                                        │
 │  Repository impls • DataSources (remote/local) • Models      │
 │  Models map to Entities via toEntity().                      │
 └───────────────────────────────┬──────────────────────────────┘
-                                 │ uses
+                                │ uses
 ┌───────────────────────────────▼──────────────────────────────┐
-│  CORE (cross-cutting)                                         │
+│  CORE (cross-cutting)                                        │
 │  NetworkClient • AuthInterceptor • TokenManagement           │
 │  Errors • DI • Theme • Local storage • Logger                │
 └──────────────────────────────────────────────────────────────┘
@@ -143,7 +143,7 @@ lib/
 
 ```bash
 # 1. Clone
-git clone <your-repo-url>
+git clone https://github.com/kietdt/flutter-production-starter
 cd flutter-production-starter
 
 # 2. Install dependencies
