@@ -1,7 +1,7 @@
-// Smoke test for the application bootstrap + go_router auth guard.
+// Smoke test for the application bootstrap + AuthGate.
 //
-// Verifies the redirect drives the start screen: no token -> LoginPage; a stored
-// access token -> HomePage.
+// Verifies the auth gate drives the start screen: no token -> LoginPage; a
+// stored access token -> HomePage.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';

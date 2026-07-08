@@ -4,7 +4,7 @@
 > Giữ nguyên phần network/architecture (đã xuất sắc), bổ sung "mặt tiền" + chuẩn hóa.
 >
 > **Quyết định đã chốt:**
-> - Routing: **go_router**
+> - ~~Routing: **go_router**~~ → **đã gỡ (2026-07-08)**: dùng `Navigator` built-in của Flutter (imperative qua `Coordinator`) + `AuthGate` widget cho luồng auth top-level. Lý do: go_router không hợp mobile app, hot reload không được.
 > - Error handling: **giữ try/catch**, nhưng map `Exception → Failure` trước khi tới UI (không thêm fpdart)
 
 ---
@@ -70,7 +70,9 @@
 - [x] Tạo `ThemeCubit` + `ThemeState` (`core/theme/`, dùng `part`/`part of`) quản lý `ThemeMode`, lưu index vào `SharedPrefsManager` qua `StorageKeys.themeMode`; đăng ký lazy singleton trong `di.dart`
 - [x] `main.dart`: `MultiBlocProvider` cấp `ThemeCubit`, `BlocBuilder` bọc `MaterialApp` với `darkTheme` + `themeMode`; widget tái sử dụng `ThemeToggleButton` (system → light → dark) đặt ở AppBar **cả Login lẫn Home**
 
-### 2.2. Routing với go_router ✅
+### 2.2. Routing ✅ (~~go_router~~ → gỡ 2026-07-08, dùng Navigator + AuthGate)
+> **Cập nhật 2026-07-08:** go_router đã bị gỡ (không hợp mobile app, hot reload không được). `app_router.dart` giờ chỉ chứa `AuthGate` widget — `BlocBuilder<AppAuthCubit>` swap `LoginPage`/`HomePage` theo status. `main.dart` dùng `MaterialApp(home: AuthGate())`. Dev-tools navigation vẫn imperative trong `Coordinator`. Bỏ dependency `go_router` khỏi `pubspec.yaml`. Các mục ✅ bên dưới là lịch sử (đã thực hiện trước khi gỡ).
+
 - [x] Thêm `go_router: ^14.6.2` (resolved 14.8.1) vào `pubspec.yaml`
 - [x] Tạo `lib/core/router/app_router.dart`: `AppRoutes` (`/`, `/login`) + `AppRouter(authCubit)` expose `GoRouter`
 - [x] `redirect` auth guard (chưa auth → `/login`; đã auth ở `/login` → `/`) + `GoRouterRefreshStream` bridge `AppAuthCubit.stream` → `Listenable`
@@ -153,6 +155,7 @@
 | 2026-07-03 | ✅ GĐ 3.2: Flavors + env. `core/config/app_config.dart` (`Flavor` enum + `AppConfig.fromFlavor`/`instance` default-dev/`init`); `bootstrap(Flavor)` dùng chung trong `main.dart` + 3 entry points `main_dev/staging/prod.dart`; DI đọc `AppConfig.instance.baseUrl` (bỏ hardcode, `AppConstants.apiBaseUrl`→`devApiBaseUrl`). Test `app_config_test.dart` (4 case). **Analyze: No issues found!**, 35 → **39 test pass**. (README flavor docs gộp vào GĐ 3.4) | Claude + kiet.do |
 | 2026-07-03 | ✅ GĐ 3.3 + 3.4 → **GĐ 3 & TOÀN BỘ PLAN HOÀN THÀNH**: CI `.github/workflows/ci.yml` (analyze→test→build apk debug, Flutter 3.27.4) + badge README; `LICENSE` (MIT), `CHANGELOG.md`; README cập nhật (flavor run, config baseUrl→`app_config.dart`, Roadmap tick hết). **39 test pass · analyze sạch** | Claude + kiet.do |
 | 2026-07-03 | ✅ Chốt checkbox cuối (GĐ 3.2 "README flavor docs") — nội dung đã có sẵn ở README §Flavors (dòng 160-168) từ GĐ 3.4, chỉ còn thiếu tick. Xác nhận lại toàn bộ: `flutter analyze` **No issues found!** · `flutter test` **39/39 pass**. **0 mục `- [ ]` còn lại trong plan.** | Claude + kiet.do |
+| 2026-07-08 | 🔄 **Gỡ go_router** (theo yêu cầu: không hợp mobile app, hot reload không được). `app_router.dart` viết lại thành `AuthGate` widget (`BlocBuilder<AppAuthCubit>` swap `LoginPage`/`HomePage` theo status, `initial`→loading); `main.dart` `MaterialApp.router`→`MaterialApp(home: AuthGate())`, bỏ `GoRouter`/`AppRouter`/`GoRouterRefreshStream`/`AppRoutes`. Gỡ `go_router` khỏi `pubspec.yaml` (+`pub get`). Dev-tools navigation trong `Coordinator` không đổi. Cập nhật docs (README/CHANGELOG/CLAUDE/MEMORY/AI rule) + comment test. **Analyze: No issues found!**, **39/39 test pass** | Claude + kiet.do |
 
 ---
 

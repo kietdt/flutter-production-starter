@@ -3,8 +3,9 @@
 // widgets express intent ("open the dev tools"); only this layer constructs
 // routes and talks to Navigator.
 //
-// Why centralize: when routing migrates to go_router (PLAN.md GĐ 2.2), only this
-// file changes — every call site (Coordinator.openX(context)) stays the same.
+// Why centralize: if imperative routing ever changes, only this file does —
+// every call site (Coordinator.openX(context)) stays the same. The top-level
+// auth flow (login/home) is handled separately by the AuthGate widget.
 //
 // RULE: `Navigator.` and `MaterialPageRoute` must appear ONLY inside this
 // directory. See `.cursor/rules/navigation-coordinator.mdc`.

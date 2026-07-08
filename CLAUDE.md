@@ -4,7 +4,7 @@ Guidance for Claude Code when working in this repository.
 
 ## Project
 
-A production-ready Flutter starter built on **Clean Architecture** (data / domain / presentation) with a **feature-first** layout. State management is **flutter_bloc (Cubit)**; DI is **get_it**; routing is **go_router**; networking is **dio** with automatic token refresh.
+A production-ready Flutter starter built on **Clean Architecture** (data / domain / presentation) with a **feature-first** layout. State management is **flutter_bloc (Cubit)**; DI is **get_it**; navigation uses **Flutter's built-in Navigator** (imperative, via a `Coordinator`) with an auth-gated widget for the top-level flow; networking is **dio** with automatic token refresh.
 
 ## Coding rules — read first
 
@@ -40,7 +40,7 @@ lib/
 
 - **DI:** `lib/core/di/di.dart` exposes `sl = GetIt.instance` and `initDI()`. Global singletons (network client, auth repo/usecases, `AppAuthCubit`, `ThemeCubit`, `LocaleCubit`) are registered there.
 - **Flavors:** `AppConfig` + `Flavor` (dev/staging/prod). Entry points: `main.dart` (defaults to dev), `main_dev.dart`, `main_staging.dart`, `main_prod.dart`. `bootstrap(flavor)` pins config, runs `initApp()` (init `SharedPrefsManager`, then `initDI()`), then `runApp`.
-- **Auth/routing:** a single `AppAuthCubit` drives both the `go_router` auth guard (`lib/core/router/app_router.dart`) and the widget tree; login/logout redirects flow from its state.
+- **Auth/routing:** a single `AppAuthCubit` drives the `AuthGate` widget (`lib/core/router/app_router.dart`) that swaps between `LoginPage`/`HomePage`; login/logout just flip its status and the widget tree rebuilds. Screen-to-screen navigation goes through `Coordinator` (`lib/core/coordinator/coordinator.dart`) using Flutter's `Navigator`.
 - **Localization:** custom `AppLanguage` (en/vi) with `LocaleCubit`; theme via `ThemeCubit`. Toggle buttons in `core/`.
 
 ## Commands

@@ -14,8 +14,8 @@ routes or calling `Navigator` directly.
 ### Why
 - One source of truth for routes and transitions.
 - Features don't depend on routing mechanics — they just say "go here".
-- Migrating to a router (e.g. `go_router`) touches only the Coordinator; every
-  call site stays unchanged.
+- Changing navigation mechanics touches only the Coordinator; every call site
+  stays unchanged.
 
 ### How it works
 `Coordinator` exposes intent-named static methods that take a `BuildContext`:

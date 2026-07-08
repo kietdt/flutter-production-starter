@@ -198,7 +198,7 @@ Conventions are documented and enforced via [`AI_RULE.md`](AI_RULE.md) and `.cur
 Planned enhancements (tracked in `PLAN.md`):
 
 - [x] **Theme** — Material 3 (`ColorScheme.fromSeed`) + dark mode via `ThemeCubit`
-- [x] **Routing** — `go_router` with auth-guard redirect
+- [x] **Navigation** — Flutter's built-in `Navigator` via a `Coordinator`, plus an `AuthGate` widget for the top-level auth flow
 - [x] **Error handling** — map `Exception → Failure` so the UI never sees raw `e.toString()`
 - [x] **Form validation** — `formz` inputs for email/password
 - [x] **Localization** — manual i18n (English + Vietnamese), no codegen — abstract `AppLanguage` + `AppLanguage.current`

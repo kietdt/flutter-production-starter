@@ -73,16 +73,17 @@ A developer-only gallery to preview how every `app_theme.dart` config affects de
 - **Flutter 3.27 note:** `Color.toARGB32()` is NOT available (use the 0..1 `.a/.r/.g/.b` getters — see `_hex` in `color_showcase_page.dart`); `withValues()` IS available.
 - **Tests:** `test/dev_tools_gallery_test.dart` verifies the grid renders one card per showcase and every showcase page builds without throwing (uses `pump`, not `pumpAndSettle`, because progress indicators animate forever).
 
-### G. Navigation — go_router (main screens) + Coordinator (dev tools)
-**Main-screen routing = go_router** (`lib/core/router/app_router.dart`):
-- `AppRoutes` = path constants (`/`, `/login`). `AppRouter(authCubit)` exposes a `GoRouter` with home + login routes.
-- `redirect` is the auth guard: unauthenticated → `/login`; authenticated on `/login` → `/`. The whole auth flow is redirect-driven — `LoginCubit` success → `AppAuthCubit.loggedIn()` (flip status) and `logout()` are all that's needed; no manual navigation.
-- `GoRouterRefreshStream extends ChangeNotifier` bridges `AppAuthCubit.stream` → the `Listenable` that `refreshListenable` wants, so the redirect re-runs on each auth change.
-- `main.dart`: `MyApp` is a `StatefulWidget` that builds the same `AppAuthCubit` (from `sl`, `..checkAuth()`) + `GoRouter` **once**, provides the cubit via `BlocProvider.value`, and uses `MaterialApp.router(routerConfig:)`.
+### G. Navigation — AuthGate widget (top-level auth) + Coordinator (dev tools)
+> **No `go_router`** — removed on 2026-07-08 (per user: go_router doesn't fit a mobile app and breaks hot reload). Top-level flow is a plain auth-gated widget; screen navigation is imperative via the `Coordinator`.
+
+**Top-level auth flow = `AuthGate` widget** (`lib/core/router/app_router.dart`):
+- `AuthGate` is a `StatelessWidget` with a `BlocBuilder<AppAuthCubit, AppAuthState>` (`buildWhen` on `status`): `status.isAuthenticated` → `HomePage`, `status.isUnauthenticated` → `LoginPage`, `initial` → a centered `CircularProgressIndicator`.
+- The whole auth flow is status-driven — `LoginCubit` success → `AppAuthCubit.loggedIn()` (flip status) and `logout()` are all that's needed; the widget tree rebuilds onto the right screen, no manual navigation.
+- `main.dart`: `MyApp` is a `StatefulWidget` that builds the same `AppAuthCubit` (from `sl`, `..checkAuth()`) **once**, provides it via `BlocProvider.value`, and uses `MaterialApp(home: const AuthGate())` (plain `MaterialApp`, not `.router`).
 
 **Dev-tools navigation stays imperative** in **`Coordinator`** (`lib/core/coordinator/coordinator.dart`, `abstract final class`):
-- `Coordinator.openDevTools(context)` / `openShowcase(context, builder)` / `pop(context)` use `Navigator`/`MaterialPageRoute` directly (intentional — the gallery is a dynamic registry of builders, not modeled as go_router routes).
-- **Enforced rule:** `Navigator.` and `MaterialPageRoute` may appear ONLY inside `lib/core/coordinator/`. See `.cursor/rules/navigation-coordinator.mdc`. (go_router's `redirect`/route builders don't use `Navigator`, so the rule holds.)
+- `Coordinator.openDevTools(context)` / `openShowcase(context, builder)` / `pop(context)` use `Navigator`/`MaterialPageRoute` directly (the gallery is a dynamic registry of builders).
+- **Enforced rule:** `Navigator.` and `MaterialPageRoute` may appear ONLY inside `lib/core/coordinator/`. See `.cursor/rules/navigation-coordinator.mdc`. (`AuthGate` swaps widgets, it doesn't call `Navigator`, so the rule holds.)
 - Overlay helpers (`showDialog`/`showModalBottomSheet`) stay in widgets but are dismissed via `Coordinator.pop(context)`.
 
 ### H. Localization (`lib/core/localization/`) — manual, NO codegen
@@ -91,7 +92,7 @@ A developer-only gallery to preview how every `app_theme.dart` config affects de
 - **`AppLanguage.current`** is the facade call sites use: `AppLanguage.current.loginButton`. `AppLanguage.of(locale)` resolves the impl; `AppLanguage.setCurrent(locale)` swaps it (owned by `LocaleCubit`).
 - **`AppLocale`** enum (en/vi): `code`, `label` (EN/VI), `flutterLocale`, `fromCode()`.
 - **`LocaleCubit`** (+`LocaleState`): persists the chosen `AppLocale` via `SharedPrefsManager` (`StorageKeys.locale`) and keeps `AppLanguage.current` in sync (updates it BEFORE emitting). Registered as a lazy singleton in DI. **`LanguageToggleButton`** (EN⇄VI) sits in the Login & Home AppBars.
-- **`main.dart`**: a top-level `BlocBuilder<LocaleCubit>` wraps `MaterialApp.router` so the whole tree rebuilds on locale change; sets `locale`, `supportedLocales`, and the `flutter_localizations` Global delegates.
+- **`main.dart`**: a top-level `BlocBuilder<LocaleCubit>` wraps `MaterialApp` so the whole tree rebuilds on locale change; sets `locale`, `supportedLocales`, and the `flutter_localizations` Global delegates.
 - The old `app_localizations.dart` placeholder was deleted. Dev-tools strings stay English on purpose (developer-only).
 - Tests: `test/localization_test.dart`.
 
@@ -109,7 +110,7 @@ Runnable with `flutter test`; `flutter analyze` is clean.
 - **`login_page_test.dart`**: widget tests for `LoginPage`. Fields render, submit button gates on formz validity, a success flips `AppAuthCubit` → `authenticated`, a failure shows a friendly SnackBar (never a raw exception). **Gotcha:** the AppBar hosts the shared `ThemeToggleButton`/`LanguageToggleButton`, so the pump helper must also provide `ThemeCubit` + `LocaleCubit` (via `MultiBlocProvider`) or the toolbar throws provider-not-found and overflows.
 - **`login_cubit_test.dart`**: 6 plain formz-validation cases + 2 `blocTest` emission-sequence cases (`[loading, success]` / `[loading, failure]`). **Gotcha:** to make a mocked async method fail, use `thenAnswer((_) async => throw ...)`, NOT `thenThrow(...)` — the latter throws synchronously, escapes into blocTest's guarded zone, and the recorded states come back `[]`.
 - **`app_config_test.dart`**: `AppConfig.fromFlavor` base-URL mapping, `isProd`, the lazy dev default, and `init()` pinning.
-- Pre-existing: `error_handling_test.dart`, `localization_test.dart`, `dev_tools_gallery_test.dart`, `widget_test.dart` (go_router redirect smoke test).
+- Pre-existing: `error_handling_test.dart`, `localization_test.dart`, `dev_tools_gallery_test.dart`, `widget_test.dart` (`AuthGate` smoke test: no token → Login, token → Home).
 
 ### K. CI/CD & Project Docs
 - **`.github/workflows/ci.yml`**: one job (`analyze-test-build`) on push to `main` and every PR — `subosito/flutter-action@v2` (Flutter `3.27.4`, cache on) → `flutter pub get` → `flutter analyze` → `flutter test` → `flutter build apk --debug -t lib/main_dev.dart`. No format-check step (12 pre-existing lib files aren't `dart format`-clean; adding one would fail CI until they're reformatted).
@@ -122,7 +123,6 @@ Runnable with `flutter test`; `flutter analyze` is clean.
 - `get_it: ^9.2.1`
 - `formz: ^0.8.0`
 - `shared_preferences: ^2.3.2`
-- `go_router: ^14.6.2` (resolved 14.8.1)
 - **dev:** `bloc_test: ^10.0.0`, `mocktail: ^1.0.4`
 
 ## 3. Active AI Rules (`.cursor/rules/`)

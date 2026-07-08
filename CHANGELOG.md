@@ -25,7 +25,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Auth/login feature (Datasource → Repository → UseCase → Cubit → UI) with formz
   validation and `Exception → Failure` mapping (UI never sees raw error strings).
 - Material 3 theming with light/dark mode and a persisted `ThemeCubit`.
-- Routing with `go_router` (auth-guard redirect) alongside a `Coordinator` for
-  imperative dev-tools navigation.
+- Navigation with Flutter's built-in `Navigator`: a `Coordinator` centralizes
+  imperative navigation and an `AuthGate` widget drives the top-level auth flow
+  (login/home) off `AppAuthCubit` status.
 - Manual localization (English / Vietnamese) via an abstract `AppLanguage`.
 - Developer Theme Gallery for previewing the design system.

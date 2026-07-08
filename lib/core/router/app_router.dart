@@ -1,80 +1,42 @@
 // Core Router
-// Responsibility: Declarative routing for the main screens (login/home) with an
-// auth guard. Dev tools navigation stays imperative in the Coordinator.
+// Responsibility: The root auth gate. A single [AppAuthCubit] decides which
+// top-level screen is shown — unauthenticated users see [LoginPage],
+// authenticated users see [HomePage].
 //
-// The redirect drives the whole auth flow: logging in (AppAuthCubit.loggedIn)
-// or out (logout) flips the auth status, refreshListenable re-runs the redirect,
-// and the user lands on the right screen — no manual navigation needed.
-
-import 'dart:async';
+// Login/logout just flip the auth status (AppAuthCubit.loggedIn()/logout()) and
+// this widget rebuilds onto the right screen — no manual navigation needed.
+//
+// Why plain widget swapping (instead of a declarative router): it keeps hot
+// reload working and fits a mobile app's simple top-level flow. Imperative
+// navigation (dev tools, detail pages) still goes through the Coordinator.
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../auth/app_auth_cubit.dart';
 import '../../feature/home/home.dart';
 import '../../feature/login/login_page.dart';
 
-/// Centralized route paths for the main screens.
-class AppRoutes {
-  AppRoutes._();
-
-  static const String home = '/';
-  static const String login = '/login';
-}
-
-class AppRouter {
-  final AppAuthCubit authCubit;
-
-  AppRouter({required this.authCubit});
-
-  late final GoRouter router = GoRouter(
-    initialLocation: AppRoutes.home,
-    refreshListenable: GoRouterRefreshStream(authCubit.stream),
-    redirect: _redirect,
-    routes: [
-      GoRoute(
-        path: AppRoutes.home,
-        builder: (context, state) => const HomePage(),
-      ),
-      GoRoute(
-        path: AppRoutes.login,
-        builder: (context, state) => const LoginPage(),
-      ),
-    ],
-  );
-
-  /// Auth guard: unauthenticated users are forced to /login; authenticated
-  /// users are kept away from /login.
-  String? _redirect(BuildContext context, GoRouterState state) {
-    final loggedIn = authCubit.state.status.isAuthenticated;
-    final goingToLogin = state.matchedLocation == AppRoutes.login;
-
-    if (!loggedIn) {
-      return goingToLogin ? null : AppRoutes.login;
-    }
-    if (goingToLogin) {
-      return AppRoutes.home;
-    }
-    return null;
-  }
-}
-
-/// Bridges a [Stream] (e.g. a Cubit's state stream) to the [Listenable] that
-/// `GoRouter.refreshListenable` expects, so the redirect re-runs on each emit.
-class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream<dynamic> stream) {
-    notifyListeners();
-    _subscription = stream.asBroadcastStream().listen(
-          (_) => notifyListeners(),
-        );
-  }
-
-  late final StreamSubscription<dynamic> _subscription;
+/// Shows the right top-level screen for the current auth state.
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
 
   @override
-  void dispose() {
-    _subscription.cancel();
-    super.dispose();
+  Widget build(BuildContext context) {
+    return BlocBuilder<AppAuthCubit, AppAuthState>(
+      buildWhen: (previous, current) => previous.status != current.status,
+      builder: (context, state) {
+        if (state.status.isAuthenticated) {
+          return const HomePage();
+        }
+        if (state.status.isUnauthenticated) {
+          return const LoginPage();
+        }
+        // Initial: the auth check hasn't resolved yet.
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      },
+    );
   }
 }

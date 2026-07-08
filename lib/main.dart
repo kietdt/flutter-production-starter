@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:go_router/go_router.dart';
 
 import 'core/auth/app_auth_cubit.dart';
 import 'core/config/app_config.dart';
@@ -40,10 +39,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  // Built once: the same AppAuthCubit instance drives both the router's auth
-  // guard and the widget tree, so login/logout redirects work consistently.
+  // Built once: the same AppAuthCubit instance drives the AuthGate, so
+  // login/logout consistently swap the top-level screen.
   late final AppAuthCubit _authCubit = sl<AppAuthCubit>()..checkAuth();
-  late final GoRouter _router = AppRouter(authCubit: _authCubit).router;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +62,7 @@ class _MyAppState extends State<MyApp> {
             buildWhen: (previous, current) =>
                 previous.themeMode != current.themeMode,
             builder: (context, themeState) {
-              return MaterialApp.router(
+              return MaterialApp(
                 title: AppLanguage.current.appTitle,
                 theme: AppTheme.lightTheme,
                 darkTheme: AppTheme.darkTheme,
@@ -77,7 +75,7 @@ class _MyAppState extends State<MyApp> {
                   GlobalWidgetsLocalizations.delegate,
                   GlobalCupertinoLocalizations.delegate,
                 ],
-                routerConfig: _router,
+                home: const AuthGate(),
               );
             },
           );
