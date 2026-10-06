@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../utils/app_logger.dart';
+import '../request_extra_keys.dart';
 import '../token_management.dart';
 
 class AuthInterceptor extends Interceptor {
@@ -17,7 +18,7 @@ class AuthInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     // Bypass auth for endpoints that don't need it (e.g. login, refresh token)
-    if (options.extra['requiresAuth'] == false) {
+    if (options.extra[RequestExtraKeys.requiresAuth] == false) {
       return super.onRequest(options, handler);
     }
 
@@ -33,9 +34,16 @@ class AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
+    // Unauthenticated endpoints (login, refresh, logout) never enter the refresh
+    // flow: a 401 from /auth/refresh would otherwise wait on its own refresh
+    // and hang forever, and a wrong-password 401 on login is not an expiry.
+    if (err.requestOptions.extra[RequestExtraKeys.requiresAuth] == false) {
+      return handler.next(err);
+    }
+
     if (err.response?.statusCode == 401) {
       // If this request was already retried and still got 401, don't retry again (prevents infinite loop)
-      if (err.requestOptions.extra['isRetry'] == true) {
+      if (err.requestOptions.extra[RequestExtraKeys.isRetry] == true) {
         return super.onError(err, handler);
       }
 
@@ -107,7 +115,7 @@ class AuthInterceptor extends Interceptor {
     final options = err.requestOptions;
 
     // Flag this request as a retry so we don't get stuck in an infinite 401 loop
-    options.extra['isRetry'] = true;
+    options.extra[RequestExtraKeys.isRetry] = true;
 
     try {
       // Use the existing dio instance. The onRequest interceptor will automatically

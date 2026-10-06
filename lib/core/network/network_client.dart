@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../error/exceptions.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/logging_interceptor.dart';
+import 'request_extra_keys.dart';
 
 /// Core Network Module
 /// Responsibility: Handle HTTP requests, interceptors, and network configuration.
@@ -48,7 +49,7 @@ class NetworkClient {
     final mergedOptions = options ?? Options();
     mergedOptions.extra = {
       ...?mergedOptions.extra,
-      'requiresAuth': requiresAuth,
+      RequestExtraKeys.requiresAuth: requiresAuth,
     };
 
     return _request(
@@ -72,7 +73,7 @@ class NetworkClient {
     final mergedOptions = options ?? Options();
     mergedOptions.extra = {
       ...?mergedOptions.extra,
-      'requiresAuth': requiresAuth,
+      RequestExtraKeys.requiresAuth: requiresAuth,
     };
 
     return _request(
@@ -97,7 +98,7 @@ class NetworkClient {
     final mergedOptions = options ?? Options();
     mergedOptions.extra = {
       ...?mergedOptions.extra,
-      'requiresAuth': requiresAuth,
+      RequestExtraKeys.requiresAuth: requiresAuth,
     };
 
     return _request(
@@ -122,7 +123,7 @@ class NetworkClient {
     final mergedOptions = options ?? Options();
     mergedOptions.extra = {
       ...?mergedOptions.extra,
-      'requiresAuth': requiresAuth,
+      RequestExtraKeys.requiresAuth: requiresAuth,
     };
 
     return _request(
@@ -147,7 +148,7 @@ class NetworkClient {
     final mergedOptions = options ?? Options();
     mergedOptions.extra = {
       ...?mergedOptions.extra,
-      'requiresAuth': requiresAuth,
+      RequestExtraKeys.requiresAuth: requiresAuth,
     };
 
     return _request(
