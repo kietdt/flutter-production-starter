@@ -46,15 +46,8 @@ class TokenManagement {
     await SharedPrefsManager.instance.remove(_refreshTokenKey);
   }
 
-  /// Mark the start of a refresh token process.
-  void startRefreshToken() {
-    if (_refreshTokenCompleter == null || _refreshTokenCompleter!.isCompleted) {
-      _refreshTokenCompleter = Completer<String?>();
-    }
-  }
-
   /// Mark the end of a refresh token process, successfully or not.
-  void finishRefreshToken(String? newAccessToken) {
+  void _finishRefreshToken(String? newAccessToken) {
     if (_refreshTokenCompleter != null &&
         !_refreshTokenCompleter!.isCompleted) {
       _refreshTokenCompleter!.complete(newAccessToken);
@@ -62,12 +55,21 @@ class TokenManagement {
     _refreshTokenCompleter = null;
   }
 
+  /// Refreshes the access token. Idempotent: while a refresh is in flight,
+  /// further callers join it instead of hitting the network again (with
+  /// refresh-token rotation a second call would present a spent token).
+  ///
+  /// The caller that started the refresh gets the error rethrown on failure;
+  /// callers that joined resolve with `null`.
   Future<String?> refreshToken() async {
-    TokenManagement.instance.startRefreshToken();
+    final inFlight = _refreshTokenCompleter;
+    if (inFlight != null) return inFlight.future;
+    // Set synchronously (before any await) so concurrent callers see it.
+    _refreshTokenCompleter = Completer<String?>();
 
     final refreshToken = getRefreshTokenSync();
     if (refreshToken == null || refreshToken.isEmpty) {
-      finishRefreshToken(null);
+      _finishRefreshToken(null);
       return null;
     }
 
@@ -94,10 +96,10 @@ class TokenManagement {
         refreshToken: newRefreshToken,
       );
 
-      finishRefreshToken(newAccessToken);
+      _finishRefreshToken(newAccessToken);
       return newAccessToken;
     } catch (e) {
-      finishRefreshToken(null);
+      _finishRefreshToken(null);
       rethrow;
     }
   }

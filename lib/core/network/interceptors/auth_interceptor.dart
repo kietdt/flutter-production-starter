@@ -56,26 +56,13 @@ class AuthInterceptor extends Interceptor {
 
       AppLogger.info('Token expired, handling 401...', name: 'AuthInterceptor');
 
-      // If a refresh is already in progress, wait for it
-      if (TokenManagement.instance.isRefreshing) {
-        AppLogger.info(
-          'Waiting for ongoing token refresh...',
-          name: 'AuthInterceptor',
-        );
-        final newToken = await TokenManagement.instance.getToken();
-
-        if (newToken != null && newToken.isNotEmpty) {
-          return _retryRequest(err, newToken, handler);
-        } else {
-          return handler.next(err);
-        }
-      }
-
-      // Check if token was already refreshed while this request was in flight
+      // Check if token was already refreshed while this request was in flight.
+      // Read synchronously: no await may sit between the `isRefreshing` check
+      // below and refreshToken(), or concurrent 401s could both start one.
       final requestToken = err.requestOptions.headers['Authorization']
           ?.toString()
           .replaceFirst('Bearer ', '');
-      final currentToken = await TokenManagement.instance.getToken();
+      final currentToken = TokenManagement.instance.getAccessTokenSync();
 
       if (currentToken != null &&
           currentToken.isNotEmpty &&
@@ -87,22 +74,35 @@ class AuthInterceptor extends Interceptor {
         return _retryRequest(err, currentToken, handler);
       }
 
+      // refreshToken() is idempotent: the first 401 starts the refresh, later
+      // ones join it. Only the starter ends the session on failure, so
+      // onUnauthorized fires once no matter how many requests were waiting.
+      final startsRefresh = !TokenManagement.instance.isRefreshing;
+      String? newToken;
       try {
-        AppLogger.info('Attempting refresh token...', name: 'AuthInterceptor');
-        final newToken = await TokenManagement.instance.refreshToken();
-
-        if (newToken != null && newToken.isNotEmpty) {
-          return _retryRequest(err, newToken, handler);
-        } else {
-          await TokenManagement.instance.clearTokens();
-          onUnauthorized();
-          return handler.next(err);
-        }
+        AppLogger.info(
+          startsRefresh
+              ? 'Attempting refresh token...'
+              : 'Waiting for ongoing token refresh...',
+          name: 'AuthInterceptor',
+        );
+        newToken = await TokenManagement.instance.refreshToken();
       } catch (e) {
+        AppLogger.error(
+          'Token refresh failed',
+          error: e,
+          name: 'AuthInterceptor',
+        );
+      }
+
+      if (newToken != null && newToken.isNotEmpty) {
+        return _retryRequest(err, newToken, handler);
+      }
+      if (startsRefresh) {
         await TokenManagement.instance.clearTokens();
         onUnauthorized();
-        return handler.next(err);
       }
+      return handler.next(err);
     }
     return super.onError(err, handler);
   }

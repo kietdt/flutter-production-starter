@@ -1,9 +1,14 @@
-// Regression tests for AuthInterceptor's 401 handling (spec #1).
+// Regression tests for AuthInterceptor's 401 handling.
 //
-// Requests flagged `requiresAuth: false` (login, refresh, logout) must never
-// enter the refresh flow. Otherwise a 401 from `/auth/refresh` itself waits on
-// the very refresh it belongs to and the request hangs forever.
+// #1 — Requests flagged `requiresAuth: false` (login, refresh, logout) must
+// never enter the refresh flow. Otherwise a 401 from `/auth/refresh` itself
+// waits on the very refresh it belongs to and the request hangs forever.
+//
+// #2 — Concurrent 401s must share ONE refresh round-trip. With refresh-token
+// rotation a second refresh call would present an already-rotated token, fail,
+// and log the user out for no reason.
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -19,28 +24,38 @@ import 'package:flutter_production_starter/core/network/token_management.dart';
 
 const _accessKey = 'access_token';
 const _refreshKey = 'refresh_token';
+const _refreshPath = '/auth/refresh';
 
-/// Fails fast instead of hanging the test runner when the deadlock regresses.
+/// Fails fast instead of hanging the test runner when a deadlock regresses.
 const _hangTimeout = Duration(seconds: 2);
 
-/// Answers every request with 401 and records the paths it was asked for.
-class _Always401Adapter implements HttpClientAdapter {
+ResponseBody _json(int statusCode, Map<String, dynamic> body) {
+  return ResponseBody.fromString(
+    jsonEncode(body),
+    statusCode,
+    headers: {
+      Headers.contentTypeHeader: [Headers.jsonContentType],
+    },
+  );
+}
+
+/// Delegates every request to [respond] and records the paths it was asked for.
+class _FakeAdapter implements HttpClientAdapter {
+  final Future<ResponseBody> Function(RequestOptions options) respond;
   final List<String> paths = [];
+
+  _FakeAdapter({required this.respond});
+
+  int callsTo(String path) => paths.where((p) => p == path).length;
 
   @override
   Future<ResponseBody> fetch(
     RequestOptions options,
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
-  ) async {
+  ) {
     paths.add(options.path);
-    return ResponseBody.fromString(
-      jsonEncode({'message': 'unauthorized'}),
-      401,
-      headers: {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
+    return respond(options);
   }
 
   @override
@@ -48,66 +63,175 @@ class _Always401Adapter implements HttpClientAdapter {
 }
 
 void main() {
-  late _Always401Adapter adapter;
   late NetworkClient client;
   late int unauthorizedCalls;
 
-  setUp(() async {
+  /// Seeds storage, builds a real [NetworkClient] (real interceptors) backed by
+  /// [adapter], and registers it where TokenManagement.refreshToken looks.
+  Future<void> setUpClient(_FakeAdapter adapter) async {
     SharedPreferences.setMockInitialValues({
-      _accessKey: 'expired-access',
-      _refreshKey: 'expired-refresh',
+      _accessKey: 'old-access',
+      _refreshKey: 'old-refresh',
     });
     await SharedPrefsManager.instance.init();
 
     unauthorizedCalls = 0;
-    adapter = _Always401Adapter();
     client = NetworkClient(
       baseUrl: 'https://api.test',
       onUnauthorized: () => unauthorizedCalls++,
     );
     client.dio.httpClientAdapter = adapter;
-
-    // TokenManagement.refreshToken resolves the client through the service
-    // locator, so register this instance there.
     sl.registerSingleton<NetworkClient>(client);
-  });
+  }
+
+  /// Holds each protected 401 until [count] of them have arrived, so their
+  /// error handlers run interleaved — the window the #2 race lives in.
+  Future<ResponseBody> Function() released401s({required int count}) {
+    var arrived = 0;
+    final allArrived = Completer<void>();
+    return () async {
+      if (++arrived == count) allArrived.complete();
+      await allArrived.future;
+      return _json(401, {'message': 'token expired'});
+    };
+  }
 
   tearDown(() async {
     await TokenManagement.instance.clearTokens();
     await sl.reset();
   });
 
-  test(
-      'a 401 from /auth/refresh fails the original request instead of hanging, '
-      'clears the session and notifies onUnauthorized once', () async {
-    await expectLater(
-      client.get<dynamic>('/me').timeout(_hangTimeout),
-      throwsA(isA<ServerException>()),
-    );
+  group('requiresAuth:false requests (#1)', () {
+    late _FakeAdapter adapter;
 
-    expect(adapter.paths, ['/me', '/auth/refresh']);
-    expect(unauthorizedCalls, 1);
-    expect(TokenManagement.instance.getAccessTokenSync(), isNull);
-    expect(TokenManagement.instance.getRefreshTokenSync(), isNull);
-    expect(TokenManagement.instance.isRefreshing, isFalse);
+    setUp(() async {
+      adapter = _FakeAdapter(
+        respond: (_) async => _json(401, {'message': 'unauthorized'}),
+      );
+      await setUpClient(adapter);
+    });
+
+    test(
+        'a 401 from /auth/refresh fails the original request instead of '
+        'hanging, clears the session and notifies onUnauthorized once',
+        () async {
+      await expectLater(
+        client.get<dynamic>('/me').timeout(_hangTimeout),
+        throwsA(isA<ServerException>()),
+      );
+
+      expect(adapter.paths, ['/me', _refreshPath]);
+      expect(unauthorizedCalls, 1);
+      expect(TokenManagement.instance.getAccessTokenSync(), isNull);
+      expect(TokenManagement.instance.getRefreshTokenSync(), isNull);
+      expect(TokenManagement.instance.isRefreshing, isFalse);
+    });
+
+    test(
+        'a 401 on a requiresAuth:false request (wrong password on login) is '
+        'returned as-is without attempting a refresh', () async {
+      await expectLater(
+        client
+            .post<dynamic>(
+              '/auth/login',
+              data: {'email': 'a@b.co', 'password': 'wrong-password'},
+              requiresAuth: false,
+            )
+            .timeout(_hangTimeout),
+        throwsA(isA<ServerException>()),
+      );
+
+      expect(adapter.paths, ['/auth/login']);
+      expect(unauthorizedCalls, 0);
+      expect(TokenManagement.instance.getRefreshTokenSync(), 'old-refresh');
+    });
   });
 
-  test(
-      'a 401 on a requiresAuth:false request (wrong password on login) is '
-      'returned as-is without attempting a refresh', () async {
-    await expectLater(
-      client
-          .post<dynamic>(
-            '/auth/login',
-            data: {'email': 'a@b.co', 'password': 'wrong-password'},
-            requiresAuth: false,
-          )
-          .timeout(_hangTimeout),
-      throwsA(isA<ServerException>()),
-    );
+  group('concurrent 401s (#2)', () {
+    test('share a single refresh round-trip and all retry with the new token',
+        () async {
+      final expired401 = released401s(count: 3);
+      final adapter = _FakeAdapter(
+        respond: (options) async {
+          if (options.path == _refreshPath) {
+            return _json(200, {
+              'accessToken': 'new-access',
+              'refreshToken': 'new-refresh',
+            });
+          }
+          if (options.headers['Authorization'] == 'Bearer new-access') {
+            return _json(200, {'path': options.path});
+          }
+          return expired401();
+        },
+      );
+      await setUpClient(adapter);
 
-    expect(adapter.paths, ['/auth/login']);
-    expect(unauthorizedCalls, 0);
-    expect(TokenManagement.instance.getRefreshTokenSync(), 'expired-refresh');
+      final results = await Future.wait([
+        client.get<Map<String, dynamic>>('/a'),
+        client.get<Map<String, dynamic>>('/b'),
+        client.get<Map<String, dynamic>>('/c'),
+      ]).timeout(_hangTimeout);
+
+      expect(results.map((r) => r['path']), ['/a', '/b', '/c']);
+      expect(adapter.callsTo(_refreshPath), 1);
+      expect(unauthorizedCalls, 0);
+      expect(TokenManagement.instance.getAccessTokenSync(), 'new-access');
+      expect(TokenManagement.instance.getRefreshTokenSync(), 'new-refresh');
+      expect(TokenManagement.instance.isRefreshing, isFalse);
+    });
+
+    test('a failed shared refresh fails every request but logs out only once',
+        () async {
+      final expired401 = released401s(count: 3);
+      final adapter = _FakeAdapter(
+        respond: (options) async {
+          if (options.path == _refreshPath) {
+            return _json(401, {'message': 'refresh token expired'});
+          }
+          return expired401();
+        },
+      );
+      await setUpClient(adapter);
+
+      final outcomes = await Future.wait([
+        for (final path in ['/a', '/b', '/c'])
+          client
+              .get<dynamic>(path)
+              .then<Object?>((_) => 'ok', onError: (Object e) => e),
+      ]).timeout(_hangTimeout);
+
+      expect(outcomes, everyElement(isA<ServerException>()));
+      expect(adapter.callsTo(_refreshPath), 1);
+      expect(unauthorizedCalls, 1);
+      expect(TokenManagement.instance.getAccessTokenSync(), isNull);
+      expect(TokenManagement.instance.isRefreshing, isFalse);
+    });
+
+    test(
+        'a 401 for a token another request already rotated retries with the '
+        'stored token without refreshing again', () async {
+      final adapter = _FakeAdapter(
+        respond: (options) async {
+          if (options.headers['Authorization'] == 'Bearer new-access') {
+            return _json(200, {'path': options.path});
+          }
+          // Another request rotated the tokens while this one was in flight.
+          await TokenManagement.instance.saveTokens(
+            accessToken: 'new-access',
+            refreshToken: 'new-refresh',
+          );
+          return _json(401, {'message': 'token expired'});
+        },
+      );
+      await setUpClient(adapter);
+
+      final result =
+          await client.get<Map<String, dynamic>>('/a').timeout(_hangTimeout);
+
+      expect(result['path'], '/a');
+      expect(adapter.paths, ['/a', '/a']);
+      expect(unauthorizedCalls, 0);
+    });
   });
 }

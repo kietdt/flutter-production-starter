@@ -95,6 +95,38 @@ void main() {
       expect(tokens.isRefreshing, isFalse);
     });
 
+    test(
+        'concurrent refreshToken() callers join the in-flight refresh instead '
+        'of each hitting the network', () async {
+      await SharedPrefsManager.instance.setString(_refreshKey, 'old-refresh');
+
+      final serverResponse = Completer<Map<String, dynamic>>();
+      when(() => network.post<Map<String, dynamic>>(
+            any(),
+            data: any(named: 'data'),
+            requiresAuth: any(named: 'requiresAuth'),
+          )).thenAnswer((_) => serverResponse.future);
+
+      final refreshes = Future.wait([
+        tokens.refreshToken(),
+        tokens.refreshToken(),
+        tokens.refreshToken(),
+      ]);
+
+      serverResponse.complete({
+        'accessToken': 'new-access',
+        'refreshToken': 'new-refresh',
+      });
+
+      expect(await refreshes, ['new-access', 'new-access', 'new-access']);
+      verify(() => network.post<Map<String, dynamic>>(
+            '/auth/refresh',
+            data: {'refreshToken': 'old-refresh'},
+            requiresAuth: false,
+          )).called(1);
+      expect(tokens.isRefreshing, isFalse);
+    });
+
     test('getToken(force: true) bypasses the queue and reads storage directly',
         () async {
       await SharedPrefsManager.instance
