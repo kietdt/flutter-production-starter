@@ -13,7 +13,6 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await SharedPrefsManager.instance.init();
-    AppLanguage.setCurrent(AppLocale.en); // reset between tests
   });
 
   group('AppLanguage', () {
@@ -22,10 +21,8 @@ void main() {
       expect(AppLanguage.of(AppLocale.vi), isA<ViLanguage>());
     });
 
-    test('current reflects setCurrent', () {
-      AppLanguage.setCurrent(AppLocale.vi);
-      expect(AppLanguage.current, isA<ViLanguage>());
-      expect(AppLanguage.current.loginButton, 'Đăng nhập');
+    test('of(vi) serves Vietnamese strings', () {
+      expect(AppLanguage.of(AppLocale.vi).loginButton, 'Đăng nhập');
     });
 
     test('AppLocale.fromCode maps codes and defaults to en', () {
@@ -39,13 +36,12 @@ void main() {
   group('LocaleCubit', () {
     LocaleCubit build() => LocaleCubit(prefs: SharedPrefsManager.instance);
 
-    test('setLocale updates state, AppLanguage.current and persists', () async {
+    test('setLocale updates state and persists', () async {
       final cubit = build();
 
       await cubit.setLocale(AppLocale.vi);
 
       expect(cubit.state.locale, AppLocale.vi);
-      expect(AppLanguage.current, isA<ViLanguage>());
       expect(SharedPrefsManager.instance.getString('locale'), 'vi');
     });
 
@@ -55,11 +51,9 @@ void main() {
 
       await cubit.toggleLocale();
       expect(cubit.state.locale, AppLocale.vi);
-      expect(AppLanguage.current.homeTitle, 'Trang chủ');
 
       await cubit.toggleLocale();
       expect(cubit.state.locale, AppLocale.en);
-      expect(AppLanguage.current.homeTitle, 'Home');
     });
 
     test('loadLocale restores the persisted locale', () async {
@@ -68,7 +62,6 @@ void main() {
       final cubit = build()..loadLocale();
 
       expect(cubit.state.locale, AppLocale.vi);
-      expect(AppLanguage.current, isA<ViLanguage>());
     });
   });
 }

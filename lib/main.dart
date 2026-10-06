@@ -7,6 +7,7 @@ import 'core/config/app_config.dart';
 import 'core/di/di.dart';
 import 'core/local_storage/shared_prefs_manager.dart';
 import 'core/localization/app_language.dart';
+import 'core/localization/app_language_context.dart';
 import 'core/localization/locale_cubit.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -63,7 +64,7 @@ class _MyAppState extends State<MyApp> {
                 previous.themeMode != current.themeMode,
             builder: (context, themeState) {
               return MaterialApp(
-                title: AppLanguage.current.appTitle,
+                onGenerateTitle: (context) => context.l10n.appTitle,
                 theme: AppTheme.lightTheme,
                 darkTheme: AppTheme.darkTheme,
                 themeMode: themeState.themeMode,

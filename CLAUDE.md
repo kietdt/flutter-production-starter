@@ -23,6 +23,7 @@ Highest-frequency rules to keep in mind:
 - **Navigation** goes through `lib/core/coordinator/coordinator.dart` — no `Navigator`/`MaterialPageRoute` in features/widgets.
 - **BlocBuilder/BlocListener/BlocConsumer** always pass `buildWhen`/`listenWhen`.
 - **Spacing** between widgets uses `Gap(...)` (from the `gap` package), not `SizedBox`.
+- **Strings** in widgets via `context.l10n.<key>`; context-free code returns an enum and the widget maps it with `context.l10n`.
 - **Logging** uses `AppLogger` (`lib/core/utils/app_logger.dart`) — never `print()` or raw `dart:developer` `log()`.
 - Always `dart format` after changes and keep `flutter analyze` clean.
 
@@ -41,7 +42,7 @@ lib/
 - **DI:** `lib/core/di/di.dart` exposes `sl = GetIt.instance` and `initDI()`. Global singletons (network client, auth repo/usecases, `AppAuthCubit`, `ThemeCubit`, `LocaleCubit`) are registered there.
 - **Flavors:** `AppConfig` + `Flavor` (dev/staging/prod). Entry points: `main.dart` (defaults to dev), `main_dev.dart`, `main_staging.dart`, `main_prod.dart`. `bootstrap(flavor)` pins config, runs `initApp()` (init `SharedPrefsManager`, then `initDI()`), then `runApp`.
 - **Auth/routing:** a single `AppAuthCubit` drives the `AuthGate` widget (`lib/core/router/app_router.dart`) that swaps between `LoginPage`/`HomePage`; login/logout just flip its status and the widget tree rebuilds. Screen-to-screen navigation goes through `Coordinator` (`lib/core/coordinator/coordinator.dart`) using Flutter's `Navigator`.
-- **Localization:** custom `AppLanguage` (en/vi) with `LocaleCubit`; theme via `ThemeCubit`. Toggle buttons in `core/`.
+- **Localization:** custom `AppLanguage` (en/vi) with `LocaleCubit`; widgets read strings via `context.l10n` (never a static/global language — it won't rebuild on switch); theme via `ThemeCubit`. Toggle buttons in `core/`.
 
 ## Commands
 

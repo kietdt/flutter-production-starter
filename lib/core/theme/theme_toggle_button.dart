@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../localization/app_language.dart';
+import '../localization/app_language_context.dart';
 import 'theme_cubit.dart';
 
 /// An [IconButton] that toggles `system → light → dark` via the global
@@ -18,8 +18,7 @@ class ThemeToggleButton extends StatelessWidget {
       buildWhen: (previous, current) => previous.themeMode != current.themeMode,
       builder: (context, state) {
         return IconButton(
-          tooltip:
-              '${AppLanguage.current.toggleTheme} (${state.themeMode.name})',
+          tooltip: '${context.l10n.toggleTheme} (${state.themeMode.name})',
           icon: Icon(_iconFor(state.themeMode)),
           onPressed: () => context.read<ThemeCubit>().toggleTheme(),
         );

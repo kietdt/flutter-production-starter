@@ -1,0 +1,33 @@
+---
+description: Read user-facing strings through context.l10n so widgets rebuild when the language changes
+globs: lib/**/*.dart
+alwaysApply: false
+---
+# Read Strings via `context.l10n`
+
+**Rule:** Widgets read localized strings with `context.l10n.<key>` (extension in `lib/core/localization/app_language_context.dart`). It resolves the language from the nearest `Localizations` (driven by `MaterialApp.locale` ← `LocaleCubit`) and registers a dependency, so the widget rebuilds when the user switches language — even inside a `const` subtree. There is no static/global "current language": a static read does not rebuild, and already-visible text would stay in the old language.
+
+Code without a `BuildContext` (form inputs, enums, state) must not resolve strings itself: expose an enum/code and let the widget map it, passing `context.l10n` in (e.g. `EmailValidationError.message(AppLanguage l10n)`).
+
+### ❌ Bad Example
+```dart
+title: Text(AppLanguage.of(AppLocale.en).loginTitle), // never rebuilds
+```
+```dart
+// email_input.dart — no context, language frozen at call time
+String? get errorText => someGlobalLanguage.emailInvalid;
+```
+
+### ✅ Good Example
+```dart
+title: Text(context.l10n.loginTitle),
+```
+```dart
+// email_input.dart
+String? errorText(AppLanguage l10n) => displayError?.message(l10n);
+
+// login_form.dart
+errorText: state.email.errorText(context.l10n),
+```
+
+`MaterialApp.title` sits above `Localizations`, so use `onGenerateTitle: (context) => context.l10n.appTitle`.

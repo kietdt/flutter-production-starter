@@ -7,7 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
-import '../../../core/localization/app_language.dart';
+import '../../../core/localization/app_language_context.dart';
 import '../cubit/login_cubit.dart';
 
 class LoginForm extends StatelessWidget {
@@ -43,9 +43,9 @@ class _EmailField extends StatelessWidget {
           keyboardType: TextInputType.emailAddress,
           onChanged: (value) => context.read<LoginCubit>().emailChanged(value),
           decoration: InputDecoration(
-            labelText: AppLanguage.current.emailLabel,
+            labelText: context.l10n.emailLabel,
             prefixIcon: const Icon(Icons.email_outlined),
-            errorText: state.email.errorText,
+            errorText: state.email.errorText(context.l10n),
           ),
         );
       },
@@ -66,9 +66,9 @@ class _PasswordField extends StatelessWidget {
           onChanged: (value) =>
               context.read<LoginCubit>().passwordChanged(value),
           decoration: InputDecoration(
-            labelText: AppLanguage.current.passwordLabel,
+            labelText: context.l10n.passwordLabel,
             prefixIcon: const Icon(Icons.lock_outline),
-            errorText: state.password.errorText,
+            errorText: state.password.errorText(context.l10n),
           ),
         );
       },
@@ -99,7 +99,7 @@ class _SubmitButton extends StatelessWidget {
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(AppLanguage.current.loginButton),
+                : Text(context.l10n.loginButton),
           ),
         );
       },

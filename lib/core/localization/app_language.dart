@@ -2,11 +2,8 @@
 // Responsibility: Manual (no codegen) i18n. `AppLanguage` is the abstract
 // contract of every user-facing string; `EnLanguage`/`ViLanguage` implement it.
 //
-// Usage from anywhere (no BuildContext needed):
-//   AppLanguage.current.loginButton
-//
-// `current` is kept in sync by `LocaleCubit`; a top-level BlocBuilder rebuilds
-// the app when the locale changes.
+// Usage from widgets: `context.l10n.loginButton` (see app_language_context.dart).
+// The active locale comes from `MaterialApp.locale`, driven by `LocaleCubit`.
 
 import 'package:flutter/widgets.dart';
 
@@ -79,15 +76,6 @@ abstract class AppLanguage {
   // --- Shared ---
   String get toggleTheme;
 
-  // ---------------------------------------------------------------------------
-  // Current-language facade
-  // ---------------------------------------------------------------------------
-
-  static AppLanguage _current = const EnLanguage();
-
-  /// The active language. Call sites read strings via `AppLanguage.current.x`.
-  static AppLanguage get current => _current;
-
   /// Resolves the implementation for a given [AppLocale].
   static AppLanguage of(AppLocale locale) {
     switch (locale) {
@@ -96,11 +84,5 @@ abstract class AppLanguage {
       case AppLocale.vi:
         return const ViLanguage();
     }
-  }
-
-  /// Sets the active language. Owned by `LocaleCubit` — call it there, not from
-  /// widgets, so the UI rebuilds consistently.
-  static void setCurrent(AppLocale locale) {
-    _current = of(locale);
   }
 }

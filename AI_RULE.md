@@ -427,3 +427,23 @@ tags: json.parseListOrNull<String>('tags'),
 ```
 
 This complements rule #12: repositories delegate parsing to Models via `.fromJson`, and inside those `fromJson` methods the parsing itself goes through `MapParser`.
+
+## 32. Read Strings via `context.l10n`
+_Source: `.cursor/rules/localization-context.mdc`_
+
+**Rule:** Widgets read localized strings with `context.l10n.<key>` (`lib/core/localization/app_language_context.dart`). It resolves the language from the nearest `Localizations` (driven by `MaterialApp.locale` ← `LocaleCubit`) and registers a dependency, so the widget rebuilds when the language changes — even inside a `const` subtree. There is no static/global "current language": a static read does not rebuild, so visible text would stay in the old language.
+
+Code without a `BuildContext` (form inputs, enums, state) exposes an enum/code; the widget maps it by passing `context.l10n` in.
+
+### ❌ Bad Example
+```dart
+title: Text(AppLanguage.of(AppLocale.en).loginTitle), // never rebuilds
+```
+
+### ✅ Good Example
+```dart
+title: Text(context.l10n.loginTitle),
+errorText: state.email.errorText(context.l10n), // String? errorText(AppLanguage l10n)
+```
+
+`MaterialApp.title` sits above `Localizations`, so use `onGenerateTitle: (context) => context.l10n.appTitle`.

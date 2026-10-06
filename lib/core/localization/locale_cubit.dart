@@ -1,6 +1,6 @@
 // Core Localization Module
-// Responsibility: Manage the active locale, persist it, and keep
-// `AppLanguage.current` in sync so widgets can read strings without a context.
+// Responsibility: Manage the active locale and persist it. `MaterialApp.locale`
+// follows this state; widgets read strings via `context.l10n`.
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -13,9 +13,7 @@ part 'locale_state.dart';
 class LocaleCubit extends Cubit<LocaleState> {
   final SharedPrefsManager prefs;
 
-  LocaleCubit({required this.prefs}) : super(const LocaleState()) {
-    AppLanguage.setCurrent(state.locale);
-  }
+  LocaleCubit({required this.prefs}) : super(const LocaleState());
 
   /// Restores the persisted locale. Call once at startup.
   void loadLocale() {
@@ -35,9 +33,7 @@ class LocaleCubit extends Cubit<LocaleState> {
     await prefs.setString(StorageKeys.locale, locale.code);
   }
 
-  // Update the static facade BEFORE emitting so the rebuild reads fresh strings.
   void _apply(AppLocale locale) {
-    AppLanguage.setCurrent(locale);
     emit(state.copyWith(locale: locale));
   }
 }

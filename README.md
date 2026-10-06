@@ -174,7 +174,7 @@ flutter run -t lib/main_prod.dart      # production backend
 
 ```bash
 flutter analyze   # static analysis — should report: No issues found!
-flutter test      # run the test suite (39 tests)
+flutter test      # run the test suite (48 tests)
 ```
 
 ---
@@ -201,8 +201,8 @@ Planned enhancements (tracked in `PLAN.md`):
 - [x] **Navigation** — Flutter's built-in `Navigator` via a `Coordinator`, plus an `AuthGate` widget for the top-level auth flow
 - [x] **Error handling** — map `Exception → Failure` so the UI never sees raw `e.toString()`
 - [x] **Form validation** — `formz` inputs for email/password
-- [x] **Localization** — manual i18n (English + Vietnamese), no codegen — abstract `AppLanguage` + `AppLanguage.current`
-- [x] **Tests** — `bloc_test` + `mocktail` covering cubits, usecases, refresh concurrency, and widgets (39 tests)
+- [x] **Localization** — manual i18n (English + Vietnamese), no codegen — abstract `AppLanguage`, read in widgets via `context.l10n` (rebuilds on language switch)
+- [x] **Tests** — `bloc_test` + `mocktail` covering cubits, usecases, refresh concurrency, and widgets (48 tests)
 - [x] **Flavors** — dev / staging / prod entry points + per-flavor config (`AppConfig`)
 - [x] **CI/CD** — GitHub Actions (analyze → test → build)
 

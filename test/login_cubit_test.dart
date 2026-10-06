@@ -6,11 +6,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:flutter_production_starter/core/error/failures.dart';
+import 'package:flutter_production_starter/core/localization/languages/en_language.dart';
 import 'package:flutter_production_starter/core/utils/feature_status.dart';
 import 'package:flutter_production_starter/domain/entity/user_entity.dart';
 import 'package:flutter_production_starter/domain/repository/auth_repository.dart';
 import 'package:flutter_production_starter/domain/usecase/login_usecase.dart';
 import 'package:flutter_production_starter/feature/login/cubit/login_cubit.dart';
+
+/// Form error messages are resolved per language; assert against English.
+const _en = EnLanguage();
 
 class _FakeRepository implements AuthRepository {
   @override
@@ -37,22 +41,22 @@ void main() {
   test('initial state is pure and invalid, with no error text', () {
     final cubit = _buildCubit();
     expect(cubit.state.isValid, isFalse);
-    expect(cubit.state.email.errorText, isNull);
-    expect(cubit.state.password.errorText, isNull);
+    expect(cubit.state.email.errorText(_en), isNull);
+    expect(cubit.state.password.errorText(_en), isNull);
     expect(cubit.state.status, FeatureStatus.init);
   });
 
   test('invalid email surfaces a friendly error and keeps form invalid', () {
     final cubit = _buildCubit();
     cubit.emailChanged('not-an-email');
-    expect(cubit.state.email.errorText, 'Enter a valid email address');
+    expect(cubit.state.email.errorText(_en), 'Enter a valid email address');
     expect(cubit.state.isValid, isFalse);
   });
 
   test('short password surfaces a friendly error', () {
     final cubit = _buildCubit();
     cubit.passwordChanged('123');
-    expect(cubit.state.password.errorText,
+    expect(cubit.state.password.errorText(_en),
         'Password must be at least 6 characters');
     expect(cubit.state.isValid, isFalse);
   });
@@ -61,8 +65,8 @@ void main() {
     final cubit = _buildCubit();
     cubit.emailChanged('user@example.com');
     cubit.passwordChanged('password123');
-    expect(cubit.state.email.errorText, isNull);
-    expect(cubit.state.password.errorText, isNull);
+    expect(cubit.state.email.errorText(_en), isNull);
+    expect(cubit.state.password.errorText(_en), isNull);
     expect(cubit.state.isValid, isTrue);
   });
 

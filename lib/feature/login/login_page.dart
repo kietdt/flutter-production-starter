@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/di/di.dart';
 import '../../core/auth/app_auth_cubit.dart';
-import '../../core/localization/app_language.dart';
+import '../../core/localization/app_language_context.dart';
 import '../../core/localization/language_toggle_button.dart';
 import '../../core/theme/theme_toggle_button.dart';
 import 'cubit/login_cubit.dart';
@@ -22,7 +22,7 @@ class LoginPage extends StatelessWidget {
       create: (context) => LoginCubit(loginUseCase: sl()),
       child: Scaffold(
         appBar: AppBar(
-          title: Text(AppLanguage.current.loginTitle),
+          title: Text(context.l10n.loginTitle),
           actions: const [LanguageToggleButton(), ThemeToggleButton()],
         ),
         body: BlocListener<LoginCubit, LoginState>(
@@ -33,8 +33,7 @@ class LoginPage extends StatelessWidget {
             } else if (state.status.isFailure) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                      state.errorMessage ?? AppLanguage.current.loginFailed),
+                  content: Text(state.errorMessage ?? context.l10n.loginFailed),
                 ),
               );
             }

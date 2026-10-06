@@ -5,7 +5,20 @@ import 'package:formz/formz.dart';
 
 import '../../../core/localization/app_language.dart';
 
-enum PasswordValidationError { empty, tooShort }
+enum PasswordValidationError {
+  empty,
+  tooShort;
+
+  /// UI-safe message in the caller's language (pass `context.l10n`).
+  String message(AppLanguage l10n) {
+    switch (this) {
+      case PasswordValidationError.empty:
+        return l10n.passwordRequired;
+      case PasswordValidationError.tooShort:
+        return l10n.passwordTooShort(PasswordInput.minLength);
+    }
+  }
+}
 
 class PasswordInput extends FormzInput<String, PasswordValidationError> {
   const PasswordInput.pure() : super.pure('');
@@ -21,14 +34,5 @@ class PasswordInput extends FormzInput<String, PasswordValidationError> {
   }
 
   /// Message to show under the field — null while the input is still pure.
-  String? get errorText {
-    switch (displayError) {
-      case PasswordValidationError.empty:
-        return AppLanguage.current.passwordRequired;
-      case PasswordValidationError.tooShort:
-        return AppLanguage.current.passwordTooShort(minLength);
-      case null:
-        return null;
-    }
-  }
+  String? errorText(AppLanguage l10n) => displayError?.message(l10n);
 }

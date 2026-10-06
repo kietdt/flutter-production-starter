@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/auth/app_auth_cubit.dart';
 import '../../core/coordinator/coordinator.dart';
-import '../../core/localization/app_language.dart';
+import '../../core/localization/app_language_context.dart';
 import '../../core/localization/language_toggle_button.dart';
 import '../../core/theme/theme_toggle_button.dart';
 import 'cubit/home_cubit.dart';
@@ -16,7 +16,7 @@ class HomePage extends StatelessWidget {
       create: (context) => HomeCubit()..loadData(),
       child: Scaffold(
         appBar: AppBar(
-          title: Text(AppLanguage.current.homeTitle),
+          title: Text(context.l10n.homeTitle),
           actions: [
             const LanguageToggleButton(),
             const ThemeToggleButton(),
@@ -31,11 +31,11 @@ class HomePage extends StatelessWidget {
         body: Column(
           children: [
             Center(
-              child: Text(AppLanguage.current.homeTitle),
+              child: Text(context.l10n.homeTitle),
             ),
             InkWell(
               onTap: () => Coordinator.openDevTools(context),
-              child: Text(AppLanguage.current.navigation),
+              child: Text(context.l10n.navigation),
             ),
           ],
         ),
