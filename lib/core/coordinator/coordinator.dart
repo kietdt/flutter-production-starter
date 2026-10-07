@@ -12,12 +12,16 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_config.dart';
 import '../../feature/dev_tools/dev_tools_gallery_page.dart';
 
 abstract final class Coordinator {
-  /// Opens the developer Theme Gallery.
-  static Future<void> openDevTools(BuildContext context) {
-    return _push(context, (_) => const DevToolsGalleryPage());
+  /// Opens the developer Theme Gallery. No-op when dev tools are disabled
+  /// for the active flavor (prod), even if a call site forgot to hide its
+  /// entry point.
+  static Future<void> openDevTools(BuildContext context) async {
+    if (!AppConfig.instance.showDevTools) return;
+    await _push<void>(context, (_) => const DevToolsGalleryPage());
   }
 
   /// Opens a Theme Gallery showcase detail page.

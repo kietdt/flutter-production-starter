@@ -59,6 +59,9 @@ class AppConfig {
 
   bool get isProd => flavor == Flavor.prod;
 
+  /// Developer tools (Theme Gallery) are reachable in every flavor but prod.
+  bool get showDevTools => !isProd;
+
   /// Network request/response logging. Off for prod and for any non-debug
   /// build, so payloads never reach release device logs.
   bool get enableNetworkLogging => kDebugMode && !isProd;

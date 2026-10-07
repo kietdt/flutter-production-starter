@@ -170,11 +170,15 @@ flutter run -t lib/main_prod.dart      # production backend
 # Bare `flutter run` uses lib/main.dart, which is equivalent to the dev flavor.
 ```
 
+Per-flavor behavior lives on `AppConfig`: `prod` turns off network logging
+(`enableNetworkLogging`) and hides the developer Theme Gallery
+(`showDevTools` — no entry on Home, `Coordinator.openDevTools` is a no-op).
+
 ### Quality checks
 
 ```bash
 flutter analyze   # static analysis — should report: No issues found!
-flutter test      # run the test suite (68 tests)
+flutter test      # run the test suite (73 tests)
 ```
 
 ### Release signing (Android)
@@ -232,7 +236,7 @@ Planned enhancements (tracked in `PLAN.md`):
 - [x] **Error handling** — map `Exception → Failure` so the UI never sees raw `e.toString()`
 - [x] **Form validation** — `formz` inputs for email/password
 - [x] **Localization** — manual i18n (English + Vietnamese), no codegen — abstract `AppLanguage`, read in widgets via `context.l10n` (rebuilds on language switch)
-- [x] **Tests** — `bloc_test` + `mocktail` covering cubits, usecases, refresh concurrency, and widgets (68 tests)
+- [x] **Tests** — `bloc_test` + `mocktail` covering cubits, usecases, refresh concurrency, and widgets (73 tests)
 - [x] **Flavors** — dev / staging / prod entry points + per-flavor config (`AppConfig`)
 - [x] **CI/CD** — GitHub Actions (analyze → test on push/PR; debug + release APK build on manual run)
 - [x] **Release signing** — Android release key via `key.properties` + R8 shrinking

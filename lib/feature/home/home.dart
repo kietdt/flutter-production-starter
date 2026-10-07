@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/auth/app_auth_cubit.dart';
+import '../../core/config/app_config.dart';
 import '../../core/coordinator/coordinator.dart';
 import '../../core/localization/app_language_context.dart';
 import '../../core/localization/language_toggle_button.dart';
@@ -33,10 +34,12 @@ class HomePage extends StatelessWidget {
             Center(
               child: Text(context.l10n.homeTitle),
             ),
-            InkWell(
-              onTap: () => Coordinator.openDevTools(context),
-              child: Text(context.l10n.navigation),
-            ),
+            // Static per-flavor flag, so the entry is simply not built in prod.
+            if (AppConfig.instance.showDevTools)
+              InkWell(
+                onTap: () => Coordinator.openDevTools(context),
+                child: Text(context.l10n.navigation),
+              ),
           ],
         ),
       ),
