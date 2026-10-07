@@ -18,6 +18,7 @@ void initDI() {
   // Core Network
   sl.registerLazySingleton<NetworkClient>(() => NetworkClient(
         baseUrl: AppConfig.instance.baseUrl,
+        enableLogging: AppConfig.instance.enableNetworkLogging,
         onUnauthorized: () {
           if (sl.isRegistered<AppAuthCubit>()) {
             sl<AppAuthCubit>().logout();

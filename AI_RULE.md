@@ -144,6 +144,8 @@ print('This is a print message');
 log('This is a log message', name: 'SomeFeature');
 ```
 
+**Secrets:** never log passwords, tokens or the `Authorization` header. Network payloads/headers go through `LogRedactor.redact(...)` (`lib/core/network/log_redactor.dart`) before logging; add new sensitive keys to its `_sensitiveKeys`. `LoggingInterceptor` is only registered when `AppConfig.instance.enableNetworkLogging` (debug && non-prod).
+
 ## 7. Code Formatting
 _Source: `.cursor/rules/code-formatting.mdc`_
 

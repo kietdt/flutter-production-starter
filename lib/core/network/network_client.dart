@@ -12,6 +12,7 @@ class NetworkClient {
   NetworkClient({
     required String baseUrl,
     required void Function() onUnauthorized,
+    bool enableLogging = false,
     int connectionTimeout = 30000,
     int receiveTimeout = 30000,
   }) {
@@ -32,7 +33,8 @@ class NetworkClient {
         dio: _dio,
         onUnauthorized: onUnauthorized,
       ),
-      LoggingInterceptor(),
+      // After AuthInterceptor so the final headers are logged (redacted).
+      if (enableLogging) LoggingInterceptor(),
     ]);
   }
 

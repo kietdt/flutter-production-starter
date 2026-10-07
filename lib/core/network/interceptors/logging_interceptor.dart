@@ -1,6 +1,11 @@
 import 'package:dio/dio.dart';
 import '../../utils/app_logger.dart';
+import '../log_redactor.dart';
 
+/// Logs requests, responses and errors with secrets masked by [LogRedactor].
+///
+/// Register it AFTER [AuthInterceptor] so the logged headers are the ones
+/// actually sent (including `Authorization`, which is redacted).
 class LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -8,12 +13,16 @@ class LoggingInterceptor extends Interceptor {
       'REQUEST[${options.method}] => PATH: ${options.path}',
       name: 'NetworkClient',
     );
+    AppLogger.debug('HEADERS: ${LogRedactor.redact(options.headers)}',
+        name: 'NetworkClient');
     if (options.queryParameters.isNotEmpty) {
-      AppLogger.debug('QUERY PARAMETERS: ${options.queryParameters}',
+      AppLogger.debug(
+          'QUERY PARAMETERS: ${LogRedactor.redact(options.queryParameters)}',
           name: 'NetworkClient');
     }
     if (options.data != null) {
-      AppLogger.debug('BODY: ${options.data}', name: 'NetworkClient');
+      AppLogger.debug('BODY: ${LogRedactor.redact(options.data)}',
+          name: 'NetworkClient');
     }
     super.onRequest(options, handler);
   }
@@ -24,7 +33,8 @@ class LoggingInterceptor extends Interceptor {
       'RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}',
       name: 'NetworkClient',
     );
-    AppLogger.debug('DATA: ${response.data}', name: 'NetworkClient');
+    AppLogger.debug('DATA: ${LogRedactor.redact(response.data)}',
+        name: 'NetworkClient');
     super.onResponse(response, handler);
   }
 
@@ -36,7 +46,7 @@ class LoggingInterceptor extends Interceptor {
       name: 'NetworkClient',
     );
     if (err.response?.data != null) {
-      AppLogger.debug('ERROR DATA: ${err.response?.data}',
+      AppLogger.debug('ERROR DATA: ${LogRedactor.redact(err.response?.data)}',
           name: 'NetworkClient');
     }
     super.onError(err, handler);

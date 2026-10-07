@@ -26,3 +26,5 @@ void someFunction() {
   log('This is a log message', name: 'SomeFeature'); // Bad: Uses raw dart:developer log
 }
 ```
+
+**Secrets:** never log passwords, tokens or the `Authorization` header. Network payloads/headers go through `LogRedactor.redact(...)` (`lib/core/network/log_redactor.dart`) before logging; add new sensitive keys to its `_sensitiveKeys`. `LoggingInterceptor` is only registered when `AppConfig.instance.enableNetworkLogging` (debug && non-prod).

@@ -3,6 +3,8 @@
 // how the build identifies itself. Base URLs live here so pointing an
 // environment at a different server is a one-line change.
 
+import 'package:flutter/foundation.dart';
+
 import '../utils/constants.dart';
 
 /// Build flavors. Each flavor has its own entry point (`main_<flavor>.dart`).
@@ -56,4 +58,8 @@ class AppConfig {
   static void init(AppConfig config) => _instance = config;
 
   bool get isProd => flavor == Flavor.prod;
+
+  /// Network request/response logging. Off for prod and for any non-debug
+  /// build, so payloads never reach release device logs.
+  bool get enableNetworkLogging => kDebugMode && !isProd;
 }

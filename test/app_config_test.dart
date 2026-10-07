@@ -26,6 +26,13 @@ void main() {
     expect(AppConfig.fromFlavor(Flavor.staging).isProd, isFalse);
   });
 
+  test('network logging is off for prod and on for other flavors in debug', () {
+    // `flutter test` runs in debug mode, so only the flavor decides here.
+    expect(AppConfig.fromFlavor(Flavor.prod).enableNetworkLogging, isFalse);
+    expect(AppConfig.fromFlavor(Flavor.dev).enableNetworkLogging, isTrue);
+    expect(AppConfig.fromFlavor(Flavor.staging).enableNetworkLogging, isTrue);
+  });
+
   test('instance defaults to the dev flavor when init was never called', () {
     // A fresh isolate runs this file, so no earlier init() has pinned a config.
     expect(AppConfig.instance.flavor, Flavor.dev);
