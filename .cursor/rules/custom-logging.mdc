@@ -28,3 +28,5 @@ void someFunction() {
 ```
 
 **Secrets:** never log passwords, tokens or the `Authorization` header. Network payloads/headers go through `LogRedactor.redact(...)` (`lib/core/network/log_redactor.dart`) before logging; add new sensitive keys to its `_sensitiveKeys`. `LoggingInterceptor` is only registered when `AppConfig.instance.enableNetworkLogging` (debug && non-prod).
+
+**Crash reporting:** `AppLogger.error(..., error: e)` is also forwarded to the `ErrorReporter` set via `AppLogger.setReporter(...)` (`lib/core/error/error_reporter.dart`) — always pass the caught object as `error:` (and `stackTrace:`) so it gets reported. Uncaught errors are routed there by `GlobalErrorHandler.install()` (`FlutterError.onError` + `PlatformDispatcher.onError`, `fatal: true`) and Cubit/Bloc errors by `AppBlocObserver`, both installed in `bootstrap()`. Don't set these handlers anywhere else.

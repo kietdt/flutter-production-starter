@@ -5,6 +5,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/auth/app_auth_cubit.dart';
 import 'core/config/app_config.dart';
 import 'core/di/di.dart';
+import 'core/error/app_bloc_observer.dart';
+import 'core/error/global_error_handler.dart';
 import 'core/local_storage/shared_prefs_manager.dart';
 import 'core/localization/app_language.dart';
 import 'core/localization/app_language_context.dart';
@@ -18,10 +20,14 @@ import 'core/theme/theme_cubit.dart';
 /// `main_staging.dart`, and `main_prod.dart`.
 Future<void> main() => bootstrap(Flavor.dev);
 
-/// Shared bootstrap for every flavor: pins the active [AppConfig] (which the
-/// network client reads for its base URL) before wiring up DI and the app.
+/// Shared bootstrap for every flavor: installs global error handling, pins
+/// the active [AppConfig] (which the network client reads for its base URL)
+/// before wiring up DI and the app.
 Future<void> bootstrap(Flavor flavor) async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Plug a crash backend here, e.g. AppLogger.setReporter(SentryReporter()).
+  GlobalErrorHandler.install();
+  Bloc.observer = const AppBlocObserver();
   AppConfig.init(AppConfig.fromFlavor(flavor));
   await initApp();
   runApp(const MyApp());
