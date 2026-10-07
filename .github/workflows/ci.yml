@@ -4,10 +4,13 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Manual run (Actions tab → CI → "Run workflow"): the only trigger that
+  # also builds the APKs.
+  workflow_dispatch:
 
 jobs:
-  analyze-test-build:
-    name: Analyze · Test · Build
+  analyze-test:
+    name: Analyze · Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,5 +32,48 @@ jobs:
       - name: Test
         run: flutter test
 
+  build:
+    name: Build APKs
+    needs: analyze-test
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      # Only a flag at job level; the secrets themselves stay in the step below.
+      HAS_RELEASE_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.4'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
       - name: Build debug APK (dev flavor)
         run: flutter build apk --debug -t lib/main_dev.dart
+
+      # Without these secrets the release build falls back to debug signing —
+      # it still verifies the R8/minify config.
+      - name: Set up release signing
+        if: env.HAS_RELEASE_KEYSTORE == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          {
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "storeFile=upload-keystore.jks"
+          } > android/key.properties
+
+      - name: Build release APK (prod flavor)
+        run: flutter build apk --release -t lib/main_prod.dart

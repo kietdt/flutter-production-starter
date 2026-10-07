@@ -174,8 +174,38 @@ flutter run -t lib/main_prod.dart      # production backend
 
 ```bash
 flutter analyze   # static analysis — should report: No issues found!
-flutter test      # run the test suite (48 tests)
+flutter test      # run the test suite (68 tests)
 ```
+
+### Release signing (Android)
+
+Release builds are signed with the key described in `android/key.properties`
+(git-ignored), and shrunk with R8 (`minifyEnabled` + `shrinkResources`, extra
+rules in `android/app/proguard-rules.pro`).
+
+```bash
+# 1. Create an upload keystore (once) — keep it and its passwords safe, never commit them
+keytool -genkey -v -keystore android/app/upload-keystore.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+
+# 2. Point Gradle at it (storeFile is relative to android/app/)
+cp android/key.properties.example android/key.properties   # then fill in the passwords
+
+# 3. Build
+flutter build appbundle --release -t lib/main_prod.dart     # Play Store
+flutter build apk --release -t lib/main_prod.dart           # sideload / testing
+```
+
+Without `android/key.properties` the release build still works but falls back to
+the **debug key** (Gradle prints a warning) — fine for CI and local checks, not
+uploadable to the Play Store.
+
+**CI:** every push to `main` / pull request runs only analyze + test. APKs are
+built **only on a manual run** (GitHub → Actions → CI → *Run workflow*), via the
+`Build APKs` job. Its release step signs with the real key when these repository
+secrets are set, and otherwise uses the debug-key fallback:
+`ANDROID_KEYSTORE_BASE64` (`base64 -i upload-keystore.jks`),
+`ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_PASSWORD`, `ANDROID_KEY_ALIAS`.
 
 ---
 
@@ -202,9 +232,10 @@ Planned enhancements (tracked in `PLAN.md`):
 - [x] **Error handling** — map `Exception → Failure` so the UI never sees raw `e.toString()`
 - [x] **Form validation** — `formz` inputs for email/password
 - [x] **Localization** — manual i18n (English + Vietnamese), no codegen — abstract `AppLanguage`, read in widgets via `context.l10n` (rebuilds on language switch)
-- [x] **Tests** — `bloc_test` + `mocktail` covering cubits, usecases, refresh concurrency, and widgets (48 tests)
+- [x] **Tests** — `bloc_test` + `mocktail` covering cubits, usecases, refresh concurrency, and widgets (68 tests)
 - [x] **Flavors** — dev / staging / prod entry points + per-flavor config (`AppConfig`)
-- [x] **CI/CD** — GitHub Actions (analyze → test → build)
+- [x] **CI/CD** — GitHub Actions (analyze → test on push/PR; debug + release APK build on manual run)
+- [x] **Release signing** — Android release key via `key.properties` + R8 shrinking
 
 ---
 
