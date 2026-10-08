@@ -20,6 +20,7 @@ Highest-frequency rules to keep in mind:
 - **State via `FeatureStatus` enum** (`init/loading/success/failure/empty`) — no per-feature status classes. Check status through its getters (`status.isLoading`), never `status == FeatureStatus.loading`.
 - **Enums** own their logic: mapping via an exhaustive `switch` getter; comparisons via `bool get isX` getters (not `==` at call sites).
 - **Cubit + State** are linked with `part` / `part of`; the state folder is named `cubit/` (or `bloc/` for a Bloc).
+- **`copyWith` nullable fields** take `Nullable<T?>?` (`lib/core/utils/nullable.dart`) so they can be cleared (`errorMessage: const Nullable(null)`); clear stale errors on the `loading` emit.
 - **Navigation** goes through `lib/core/coordinator/coordinator.dart` — no `Navigator`/`MaterialPageRoute` in features/widgets.
 - **BlocBuilder/BlocListener/BlocConsumer** always pass `buildWhen`/`listenWhen`.
 - **Spacing** between widgets uses `Gap(...)` (from the `gap` package), not `SizedBox`.

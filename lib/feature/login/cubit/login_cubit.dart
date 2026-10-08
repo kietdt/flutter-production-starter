@@ -5,6 +5,7 @@ import '../../../domain/entity/user_entity.dart';
 import '../../../domain/usecase/login_usecase.dart';
 import '../../../core/utils/feature_status.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../core/utils/nullable.dart';
 import '../form/email_input.dart';
 import '../form/password_input.dart';
 
@@ -36,7 +37,11 @@ class LoginCubit extends Cubit<LoginState> {
   Future<void> login() async {
     if (!state.isValid) return;
 
-    emit(state.copyWith(status: FeatureStatus.loading));
+    // Drop the previous attempt's error so it can't resurface on this one.
+    emit(state.copyWith(
+      status: FeatureStatus.loading,
+      errorMessage: const Nullable(null),
+    ));
 
     try {
       final user = await loginUseCase.execute(
@@ -45,18 +50,18 @@ class LoginCubit extends Cubit<LoginState> {
       );
       AppLogger.info('Login success for user: ${user.email}',
           name: 'LoginCubit');
-      emit(state.copyWith(status: FeatureStatus.success, user: user));
+      emit(state.copyWith(status: FeatureStatus.success, user: Nullable(user)));
     } on Failure catch (e) {
       // Repository maps every error to a Failure carrying a UI-safe message.
       AppLogger.error('Login failed', error: e, name: 'LoginCubit');
       emit(state.copyWith(
-          status: FeatureStatus.failure, errorMessage: e.message));
+          status: FeatureStatus.failure, errorMessage: Nullable(e.message)));
     } catch (e) {
       AppLogger.error('Login failed (unexpected)',
           error: e, name: 'LoginCubit');
       emit(state.copyWith(
           status: FeatureStatus.failure,
-          errorMessage: const UnknownFailure().message));
+          errorMessage: Nullable(const UnknownFailure().message)));
     }
   }
 }

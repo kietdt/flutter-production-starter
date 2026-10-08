@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:flutter_production_starter/core/error/failures.dart';
 import 'package:flutter_production_starter/core/localization/languages/en_language.dart';
 import 'package:flutter_production_starter/core/utils/feature_status.dart';
+import 'package:flutter_production_starter/core/utils/nullable.dart';
 import 'package:flutter_production_starter/domain/entity/user_entity.dart';
 import 'package:flutter_production_starter/domain/repository/auth_repository.dart';
 import 'package:flutter_production_starter/domain/usecase/login_usecase.dart';
@@ -85,6 +86,33 @@ void main() {
     expect(cubit.state.user, isNotNull);
   });
 
+  group('LoginState.copyWith nullable fields', () {
+    const user = UserEntity(id: '1', email: 'a@b.com', userName: 'u');
+    const filled = LoginState(user: user, errorMessage: 'boom');
+
+    test('keeps nullable fields when they are omitted', () {
+      final LoginState next = filled.copyWith(status: FeatureStatus.loading);
+      expect(next.user, same(user));
+      expect(next.errorMessage, 'boom');
+    });
+
+    test('clears nullable fields with Nullable(null)', () {
+      final LoginState next = filled.copyWith(
+          user: const Nullable(null), errorMessage: const Nullable(null));
+      expect(next.user, isNull);
+      expect(next.errorMessage, isNull);
+    });
+
+    test('replaces nullable fields with Nullable(value)', () {
+      final LoginState next = const LoginState().copyWith(
+        user: const Nullable(user),
+        errorMessage: const Nullable('new'),
+      );
+      expect(next.user, same(user));
+      expect(next.errorMessage, 'new');
+    });
+  });
+
   group('login() emission sequence', () {
     late AuthRepository repository;
 
@@ -125,6 +153,40 @@ void main() {
             .having((s) => s.status, 'status', FeatureStatus.failure)
             .having((s) => s.errorMessage, 'errorMessage',
                 'No internet connection'),
+      ],
+    );
+
+    // #9 — a stale error from the previous attempt must not survive a retry.
+    blocTest<LoginCubit, LoginState>(
+      'a retry after a failure clears errorMessage from loading onwards',
+      build: () => _validCubit(repository),
+      setUp: () {
+        var calls = 0;
+        when(() => repository.login(any(), any())).thenAnswer((_) async {
+          if (++calls == 1) {
+            throw const ServerFailure(message: 'No internet connection');
+          }
+          return const UserEntity(
+              id: '1', email: 'user@example.com', userName: 'u');
+        });
+      },
+      act: (cubit) async {
+        await cubit.login();
+        await cubit.login();
+      },
+      expect: () => [
+        isA<LoginState>()
+            .having((s) => s.status, 'status', FeatureStatus.loading),
+        isA<LoginState>()
+            .having((s) => s.status, 'status', FeatureStatus.failure)
+            .having((s) => s.errorMessage, 'errorMessage',
+                'No internet connection'),
+        isA<LoginState>()
+            .having((s) => s.status, 'status', FeatureStatus.loading)
+            .having((s) => s.errorMessage, 'errorMessage', isNull),
+        isA<LoginState>()
+            .having((s) => s.status, 'status', FeatureStatus.success)
+            .having((s) => s.errorMessage, 'errorMessage', isNull),
       ],
     );
   });

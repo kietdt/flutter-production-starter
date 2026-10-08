@@ -17,21 +17,24 @@ class LoginState {
     this.errorMessage,
   });
 
+  /// Nullable fields take a [Nullable] so they can be cleared:
+  /// omit to keep, `const Nullable(null)` to clear, `Nullable(v)` to replace.
   LoginState copyWith({
     FeatureStatus? status,
     EmailInput? email,
     PasswordInput? password,
     bool? isValid,
-    UserEntity? user,
-    String? errorMessage,
+    Nullable<UserEntity?>? user,
+    Nullable<String?>? errorMessage,
   }) {
     return LoginState(
       status: status ?? this.status,
       email: email ?? this.email,
       password: password ?? this.password,
       isValid: isValid ?? this.isValid,
-      user: user ?? this.user,
-      errorMessage: errorMessage ?? this.errorMessage,
+      user: user != null ? user.value : this.user,
+      errorMessage:
+          errorMessage != null ? errorMessage.value : this.errorMessage,
     );
   }
 }

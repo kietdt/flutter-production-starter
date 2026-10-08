@@ -451,3 +451,29 @@ errorText: state.email.errorText(context.l10n), // String? errorText(AppLanguage
 ```
 
 `MaterialApp.title` sits above `Localizations`, so use `onGenerateTitle: (context) => context.l10n.appTitle`.
+
+## 33. `copyWith` for Nullable Fields Uses `Nullable<T?>`
+_Source: `.cursor/rules/copywith-nullable-fields.mdc`_
+
+**Rule:** In a state's `copyWith`, every **nullable** field takes a `Nullable<T?>?` (`lib/core/utils/nullable.dart`) instead of `T?`. With `field ?? this.field` a `null` argument means "keep", so the field can never be cleared — e.g. a stale `errorMessage` survives a retry. Non-nullable fields keep the plain `T?` + `??` form.
+
+Call sites: omit to keep, `const Nullable(null)` to clear, `Nullable(value)` to set. `Nullable`'s constructor is positional on purpose — the one exception to the named-params rule. Clear transient fields (errors) when a new attempt starts (the `loading` emit).
+
+### ❌ Bad Example
+```dart
+LoginState copyWith({String? errorMessage}) =>
+    LoginState(errorMessage: errorMessage ?? this.errorMessage); // can't clear
+
+emit(state.copyWith(status: FeatureStatus.loading)); // old error still there
+```
+
+### ✅ Good Example
+```dart
+LoginState copyWith({Nullable<String?>? errorMessage}) => LoginState(
+      errorMessage:
+          errorMessage != null ? errorMessage.value : this.errorMessage,
+    );
+
+emit(state.copyWith(status: FeatureStatus.loading, errorMessage: const Nullable(null)));
+emit(state.copyWith(status: FeatureStatus.failure, errorMessage: Nullable(e.message)));
+```
