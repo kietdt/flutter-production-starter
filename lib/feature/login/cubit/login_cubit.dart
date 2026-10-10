@@ -1,13 +1,16 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_production_starter/core/error/failures.dart';
+import 'package:flutter_production_starter/core/localization/app_language.dart';
+import 'package:flutter_production_starter/core/localization/failure_message.dart';
+import 'package:flutter_production_starter/core/utils/app_logger.dart';
+import 'package:flutter_production_starter/core/utils/feature_status.dart';
+import 'package:flutter_production_starter/core/utils/nullable.dart';
+import 'package:flutter_production_starter/domain/entity/user_entity.dart';
+import 'package:flutter_production_starter/domain/usecase/login_usecase.dart';
+import 'package:flutter_production_starter/feature/login/form/email_input.dart';
+import 'package:flutter_production_starter/feature/login/form/password_input.dart';
 import 'package:formz/formz.dart';
-import '../../../core/error/failures.dart';
-import '../../../domain/entity/user_entity.dart';
-import '../../../domain/usecase/login_usecase.dart';
-import '../../../core/utils/feature_status.dart';
-import '../../../core/utils/app_logger.dart';
-import '../../../core/utils/nullable.dart';
-import '../form/email_input.dart';
-import '../form/password_input.dart';
 
 part 'login_state.dart';
 
@@ -37,10 +40,10 @@ class LoginCubit extends Cubit<LoginState> {
   Future<void> login() async {
     if (!state.isValid) return;
 
-    // Drop the previous attempt's error so it can't resurface on this one.
+    // Drop the previous attempt's failure so it can't resurface on this one.
     emit(state.copyWith(
       status: FeatureStatus.loading,
-      errorMessage: const Nullable(null),
+      failure: const Nullable(null),
     ));
 
     try {
@@ -52,16 +55,35 @@ class LoginCubit extends Cubit<LoginState> {
           name: 'LoginCubit');
       emit(state.copyWith(status: FeatureStatus.success, user: Nullable(user)));
     } on Failure catch (e) {
-      // Repository maps every error to a Failure carrying a UI-safe message.
-      AppLogger.error('Login failed', error: e, name: 'LoginCubit');
+      _logFailure(e);
+      emit(state.copyWith(status: FeatureStatus.failure, failure: Nullable(e)));
+    } catch (e, st) {
+      // Repositories map every error to a Failure; anything else is a bug.
+      final UnknownFailure failure = UnknownFailure(cause: e, stackTrace: st);
+      _logFailure(failure);
       emit(state.copyWith(
-          status: FeatureStatus.failure, errorMessage: Nullable(e.message)));
-    } catch (e) {
-      AppLogger.error('Login failed (unexpected)',
-          error: e, name: 'LoginCubit');
-      emit(state.copyWith(
-          status: FeatureStatus.failure,
-          errorMessage: Nullable(const UnknownFailure().message)));
+        status: FeatureStatus.failure,
+        failure: Nullable(failure),
+      ));
+    }
+  }
+
+  /// Expected failures (offline, wrong password, server errors) are only
+  /// logged; unexpected ones go to crash reporting with their root cause.
+  void _logFailure(Failure failure) {
+    switch (failure) {
+      case UnknownFailure(:final cause, :final stackTrace):
+        AppLogger.error(
+          'Login failed unexpectedly',
+          error: cause ?? failure,
+          stackTrace: stackTrace,
+          name: 'LoginCubit',
+        );
+      case NetworkFailure() ||
+            UnauthorizedFailure() ||
+            ServerFailure() ||
+            CancelledFailure():
+        AppLogger.info('Login failed: $failure', name: 'LoginCubit');
     }
   }
 }

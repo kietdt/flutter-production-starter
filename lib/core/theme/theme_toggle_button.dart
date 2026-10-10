@@ -4,8 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../localization/app_language_context.dart';
-import 'theme_cubit.dart';
+import 'package:flutter_production_starter/core/localization/app_language_context.dart';
+import 'package:flutter_production_starter/core/theme/cubit/theme_cubit.dart';
 
 /// An [IconButton] that toggles `system → light → dark` via the global
 /// [ThemeCubit]. Drop it into any AppBar's `actions`.

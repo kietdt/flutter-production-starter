@@ -1,9 +1,8 @@
 // Login Form Input
 // Responsibility: formz-validated password field with a UI-safe error message.
 
+import 'package:flutter_production_starter/core/localization/app_language.dart';
 import 'package:formz/formz.dart';
-
-import '../../../core/localization/app_language.dart';
 
 enum PasswordValidationError {
   empty,

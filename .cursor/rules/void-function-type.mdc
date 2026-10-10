@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Declare Function Types With void
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** When declaring a variable, parameter, or field whose type is a function that returns nothing, put `void` before `Function`. This avoids linter warnings and makes the intent explicit (a bare `Function(...)` returns `dynamic`).
 
 ### ❌ Bad Example

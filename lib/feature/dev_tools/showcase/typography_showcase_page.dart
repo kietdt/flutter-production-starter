@@ -3,10 +3,9 @@
 // Material 3 type scale the theme exposes.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_production_starter/core/theme/app_colors.dart';
+import 'package:flutter_production_starter/core/theme/theme_toggle_button.dart';
 import 'package:gap/gap.dart';
-
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/theme_toggle_button.dart';
 
 class TypographyShowcasePage extends StatelessWidget {
   const TypographyShowcasePage({super.key});

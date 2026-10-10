@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Append New Locale Keys at the End
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** When adding a new text/key to localization files (e.g. `app_language.dart`, `en.dart`, `vi.dart`), always append it at the **end** of the file (before the closing `}`) instead of inserting it between existing keys. This greatly reduces merge conflicts when multiple people add strings in parallel.
 
 ### ❌ Bad Example

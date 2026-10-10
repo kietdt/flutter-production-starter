@@ -5,6 +5,8 @@ globs: *.dart
 
 # Enum Boolean Getters
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** Do not compare an enum value against a specific case with `==` at the
 call site. Instead, define `bool get isX` getters inside the enum (one per case)
 and compare through them. This keeps comparison logic encapsulated in the enum,

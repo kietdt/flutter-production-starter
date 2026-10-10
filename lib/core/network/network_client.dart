@@ -1,12 +1,14 @@
 import 'package:dio/dio.dart';
-import '../error/exceptions.dart';
-import 'interceptors/auth_interceptor.dart';
-import 'interceptors/logging_interceptor.dart';
-import 'request_extra_keys.dart';
-import 'token_management.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_production_starter/core/error/exceptions.dart';
+import 'package:flutter_production_starter/core/network/interceptors/auth_interceptor.dart';
+import 'package:flutter_production_starter/core/network/interceptors/logging_interceptor.dart';
+import 'package:flutter_production_starter/core/network/request_extra_keys.dart';
+import 'package:flutter_production_starter/core/network/token_management.dart';
+import 'package:flutter_production_starter/core/utils/map_ext.dart';
 
-/// Core Network Module
-/// Responsibility: Handle HTTP requests, interceptors, and network configuration.
+/// Typed HTTP client: every call goes through [_request], so failures always
+/// surface as a [ServerException] (see `_mapException`).
 class NetworkClient {
   late final Dio _dio;
 
@@ -15,14 +17,14 @@ class NetworkClient {
     required TokenManagement tokenManagement,
     required void Function() onUnauthorized,
     bool enableLogging = false,
-    int connectionTimeout = 30000,
-    int receiveTimeout = 30000,
+    Duration connectTimeout = const Duration(seconds: 30),
+    Duration receiveTimeout = const Duration(seconds: 30),
   }) {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout: Duration(milliseconds: connectionTimeout),
-        receiveTimeout: Duration(milliseconds: receiveTimeout),
+        connectTimeout: connectTimeout,
+        receiveTimeout: receiveTimeout,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -41,7 +43,11 @@ class NetworkClient {
     ]);
   }
 
-  /// Expose dio if direct access is needed (e.g. for FormData)
+  /// The underlying Dio, for tests (e.g. swapping `httpClientAdapter`).
+  /// App code must use the typed methods: calling Dio directly skips the
+  /// `DioException → ServerException` mapping. Add a method here (e.g.
+  /// `upload`) instead of reaching for this.
+  @visibleForTesting
   Dio get dio => _dio;
 
   Future<T> get<T>(
@@ -50,18 +56,12 @@ class NetworkClient {
     Options? options,
     CancelToken? cancelToken,
     bool requiresAuth = true,
-  }) async {
-    final mergedOptions = options ?? Options();
-    mergedOptions.extra = {
-      ...?mergedOptions.extra,
-      RequestExtraKeys.requiresAuth: requiresAuth,
-    };
-
+  }) {
     return _request(
       () => _dio.get<T>(
         path,
         queryParameters: queryParameters,
-        options: mergedOptions,
+        options: _withAuth(options, requiresAuth: requiresAuth),
         cancelToken: cancelToken,
       ),
     );
@@ -69,24 +69,18 @@ class NetworkClient {
 
   Future<T> post<T>(
     String path, {
-    dynamic data,
+    Object? data,
     Map<String, dynamic>? queryParameters,
     Options? options,
     CancelToken? cancelToken,
     bool requiresAuth = true,
-  }) async {
-    final mergedOptions = options ?? Options();
-    mergedOptions.extra = {
-      ...?mergedOptions.extra,
-      RequestExtraKeys.requiresAuth: requiresAuth,
-    };
-
+  }) {
     return _request(
       () => _dio.post<T>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: mergedOptions,
+        options: _withAuth(options, requiresAuth: requiresAuth),
         cancelToken: cancelToken,
       ),
     );
@@ -94,24 +88,18 @@ class NetworkClient {
 
   Future<T> put<T>(
     String path, {
-    dynamic data,
+    Object? data,
     Map<String, dynamic>? queryParameters,
     Options? options,
     CancelToken? cancelToken,
     bool requiresAuth = true,
-  }) async {
-    final mergedOptions = options ?? Options();
-    mergedOptions.extra = {
-      ...?mergedOptions.extra,
-      RequestExtraKeys.requiresAuth: requiresAuth,
-    };
-
+  }) {
     return _request(
       () => _dio.put<T>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: mergedOptions,
+        options: _withAuth(options, requiresAuth: requiresAuth),
         cancelToken: cancelToken,
       ),
     );
@@ -119,24 +107,18 @@ class NetworkClient {
 
   Future<T> delete<T>(
     String path, {
-    dynamic data,
+    Object? data,
     Map<String, dynamic>? queryParameters,
     Options? options,
     CancelToken? cancelToken,
     bool requiresAuth = true,
-  }) async {
-    final mergedOptions = options ?? Options();
-    mergedOptions.extra = {
-      ...?mergedOptions.extra,
-      RequestExtraKeys.requiresAuth: requiresAuth,
-    };
-
+  }) {
     return _request(
       () => _dio.delete<T>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: mergedOptions,
+        options: _withAuth(options, requiresAuth: requiresAuth),
         cancelToken: cancelToken,
       ),
     );
@@ -144,83 +126,101 @@ class NetworkClient {
 
   Future<T> patch<T>(
     String path, {
-    dynamic data,
+    Object? data,
     Map<String, dynamic>? queryParameters,
     Options? options,
     CancelToken? cancelToken,
     bool requiresAuth = true,
-  }) async {
-    final mergedOptions = options ?? Options();
-    mergedOptions.extra = {
-      ...?mergedOptions.extra,
-      RequestExtraKeys.requiresAuth: requiresAuth,
-    };
-
+  }) {
     return _request(
       () => _dio.patch<T>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: mergedOptions,
+        options: _withAuth(options, requiresAuth: requiresAuth),
         cancelToken: cancelToken,
       ),
     );
+  }
+
+  /// A copy of [options] flagged for [AuthInterceptor]. Never mutates the
+  /// caller's instance, so an `Options` can be reused across requests.
+  Options _withAuth(Options? options, {required bool requiresAuth}) {
+    final Map<String, dynamic> extra = {
+      ...?options?.extra,
+      RequestExtraKeys.requiresAuth: requiresAuth,
+    };
+    return options?.copyWith(extra: extra) ?? Options(extra: extra);
   }
 
   Future<T> _request<T>(Future<Response<T>> Function() requestFunc) async {
     try {
       final response = await requestFunc();
       return response.data as T;
-    } on DioException catch (e) {
-      throw _mapException(e);
-    } catch (e) {
-      throw ServerException(
-        message: 'Unexpected error occurred: $e',
-        code: NetworkErrorCode.unexpectedError.errorCode,
+    } on DioException catch (e, st) {
+      // Keep the original stack trace for logging / crash reporting.
+      Error.throwWithStackTrace(_mapException(e), st);
+    } catch (e, st) {
+      Error.throwWithStackTrace(
+        ServerException(type: NetworkErrorCode.unknown, cause: e),
+        st,
       );
     }
   }
 
-  Exception _mapException(DioException exception) {
-    final statusCode = exception.response?.statusCode?.toString();
-    final responseData = exception.response?.data;
-    final Map<String, dynamic>? errorData =
-        responseData is Map<String, dynamic> ? responseData : null;
-
+  ServerException _mapException(DioException exception) {
     switch (exception.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
+      case DioExceptionType.transformTimeout:
         return ServerException(
-          message: 'Connection timed out',
-          code: NetworkErrorCode.timeout.errorCode,
+          type: NetworkErrorCode.timeout,
+          cause: exception,
+        );
+      case DioExceptionType.badCertificate:
+        return ServerException(
+          type: NetworkErrorCode.badCertificate,
+          cause: exception,
         );
       case DioExceptionType.badResponse:
-        final message = errorData?['message'] ?? 'Bad response from server';
-        final code = errorData?['code']?.toString() ??
-            statusCode ??
-            NetworkErrorCode.badResponse.errorCode;
+        final ({String? code, String? message}) body =
+            _parseErrorBody(exception.response?.data);
         return ServerException(
-          message: '[$statusCode] $message',
-          code: code,
-          error: errorData,
+          type: NetworkErrorCode.badResponse,
+          statusCode: exception.response?.statusCode,
+          serverCode: body.code,
+          serverMessage: body.message,
+          cause: exception,
         );
       case DioExceptionType.cancel:
         return ServerException(
-          message: 'Request was cancelled',
-          code: NetworkErrorCode.cancelled.errorCode,
+          type: NetworkErrorCode.cancelled,
+          cause: exception,
         );
       case DioExceptionType.connectionError:
         return ServerException(
-          message: 'No internet connection',
-          code: NetworkErrorCode.connectionError.errorCode,
+          type: NetworkErrorCode.connectionError,
+          cause: exception,
         );
       case DioExceptionType.unknown:
-      default:
         return ServerException(
-          message: exception.message ?? 'Unknown network error',
-          code: NetworkErrorCode.unknown.errorCode,
+          type: NetworkErrorCode.unknown,
+          cause: exception,
         );
     }
+  }
+
+  /// Reads the business error code + message out of an error response body.
+  ///
+  /// PROJECT HOOK: the one place that knows the backend's error format. The
+  /// default reads `{"code": ..., "message": ...}`; adapt it for shapes like
+  /// `{"error": {...}}` or `{"errors": [...]}`.
+  ({String? code, String? message}) _parseErrorBody(Object? data) {
+    if (data is! Map) return (code: null, message: null);
+    return (
+      code: data.parseStringOrNull('code'),
+      message: data.parseStringOrNull('message'),
+    );
   }
 }

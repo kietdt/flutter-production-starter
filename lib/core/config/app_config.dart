@@ -5,7 +5,7 @@
 
 import 'package:flutter/foundation.dart';
 
-import '../utils/constants.dart';
+import 'package:flutter_production_starter/core/utils/constants.dart';
 
 /// Build flavors. Each flavor has its own entry point (`main_<flavor>.dart`).
 enum Flavor { dev, staging, prod }
@@ -15,10 +15,17 @@ class AppConfig {
   final String baseUrl;
   final String appName;
 
+  /// Show the backend's error `message` instead of the generic localized
+  /// text for server errors (`ServerFailure`). Off by default so technical
+  /// detail never reaches users; turn it on only when the backend guarantees
+  /// friendly messages in the user's language.
+  final bool useServerErrorMessage;
+
   const AppConfig({
     required this.flavor,
     required this.baseUrl,
     required this.appName,
+    this.useServerErrorMessage = false,
   });
 
   /// Resolves the configuration for a [flavor]. `switch` per `enum-mapping.mdc`.

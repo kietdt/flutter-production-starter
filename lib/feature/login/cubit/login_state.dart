@@ -1,12 +1,12 @@
 part of 'login_cubit.dart';
 
-class LoginState {
+class LoginState extends Equatable {
   final FeatureStatus status;
   final EmailInput email;
   final PasswordInput password;
   final bool isValid;
   final UserEntity? user;
-  final String? errorMessage;
+  final Failure? failure;
 
   const LoginState({
     this.status = FeatureStatus.init,
@@ -14,8 +14,23 @@ class LoginState {
     this.password = const PasswordInput.pure(),
     this.isValid = false,
     this.user,
-    this.errorMessage,
+    this.failure,
   });
+
+  /// Text for the failure SnackBar. On the login screen a 401 means wrong
+  /// credentials, not an expired session; everything else uses the shared
+  /// [FailureMessage] mapping.
+  String failureMessage(AppLanguage l10n) {
+    final Failure? failure = this.failure;
+    switch (failure) {
+      case null:
+        return l10n.loginFailed;
+      case UnauthorizedFailure():
+        return l10n.loginInvalidCredentials;
+      case final Failure other:
+        return other.message(l10n);
+    }
+  }
 
   /// Nullable fields take a [Nullable] so they can be cleared:
   /// omit to keep, `const Nullable(null)` to clear, `Nullable(v)` to replace.
@@ -25,7 +40,7 @@ class LoginState {
     PasswordInput? password,
     bool? isValid,
     Nullable<UserEntity?>? user,
-    Nullable<String?>? errorMessage,
+    Nullable<Failure?>? failure,
   }) {
     return LoginState(
       status: status ?? this.status,
@@ -33,8 +48,10 @@ class LoginState {
       password: password ?? this.password,
       isValid: isValid ?? this.isValid,
       user: user != null ? user.value : this.user,
-      errorMessage:
-          errorMessage != null ? errorMessage.value : this.errorMessage,
+      failure: failure != null ? failure.value : this.failure,
     );
   }
+
+  @override
+  List<Object?> get props => [status, email, password, isValid, user, failure];
 }

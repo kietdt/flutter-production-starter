@@ -5,25 +5,26 @@ alwaysApply: false
 ---
 # `copyWith` for Nullable Fields Uses `Nullable<T?>`
 
-**Rule:** In a state's `copyWith`, every **nullable** field takes a `Nullable<T?>?` (`lib/core/utils/nullable.dart`) instead of `T?`. With `field ?? this.field` a `null` argument means "keep", so the field can never be cleared — e.g. a stale `errorMessage` survives a retry. Non-nullable fields keep the plain `T?` + `??` form.
+> **Enforced by:** manual review (no reliable automated check)
 
-Call sites: omit to keep, `const Nullable(null)` to clear, `Nullable(value)` to set. `Nullable`'s constructor is positional on purpose — the one exception to the named-params rule. Clear transient fields (errors) when a new attempt starts (the `loading` emit).
+**Rule:** In a state's `copyWith`, every **nullable** field takes a `Nullable<T?>?` (`lib/core/utils/nullable.dart`) instead of `T?`. With `field ?? this.field` a `null` argument means "keep", so the field can never be cleared — e.g. a stale `failure` survives a retry. Non-nullable fields keep the plain `T?` + `??` form.
+
+Call sites: omit to keep, `const Nullable(null)` to clear, `Nullable(value)` to set. `Nullable`'s constructor is positional on purpose — the one exception to the named-params rule. Clear transient fields (failures) when a new attempt starts (the `loading` emit).
 
 ### ❌ Bad Example
 ```dart
-LoginState copyWith({String? errorMessage}) =>
-    LoginState(errorMessage: errorMessage ?? this.errorMessage); // can't clear
+LoginState copyWith({Failure? failure}) =>
+    LoginState(failure: failure ?? this.failure); // can't clear
 
-emit(state.copyWith(status: FeatureStatus.loading)); // old error still there
+emit(state.copyWith(status: FeatureStatus.loading)); // old failure still there
 ```
 
 ### ✅ Good Example
 ```dart
-LoginState copyWith({Nullable<String?>? errorMessage}) => LoginState(
-      errorMessage:
-          errorMessage != null ? errorMessage.value : this.errorMessage,
+LoginState copyWith({Nullable<Failure?>? failure}) => LoginState(
+      failure: failure != null ? failure.value : this.failure,
     );
 
-emit(state.copyWith(status: FeatureStatus.loading, errorMessage: const Nullable(null)));
-emit(state.copyWith(status: FeatureStatus.failure, errorMessage: Nullable(e.message)));
+emit(state.copyWith(status: FeatureStatus.loading, failure: const Nullable(null)));
+emit(state.copyWith(status: FeatureStatus.failure, failure: Nullable(e)));
 ```

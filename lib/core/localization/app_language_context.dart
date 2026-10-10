@@ -3,7 +3,7 @@
 
 import 'package:flutter/widgets.dart';
 
-import 'app_language.dart';
+import 'package:flutter_production_starter/core/localization/app_language.dart';
 
 extension AppLanguageContext on BuildContext {
   /// Strings in the language of the nearest [Localizations] (driven by

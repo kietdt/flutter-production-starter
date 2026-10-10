@@ -5,7 +5,7 @@
 
 import 'dart:developer' as developer;
 
-import '../error/error_reporter.dart';
+import 'package:flutter_production_starter/core/error/error_reporter.dart';
 
 class AppLogger {
   static ErrorReporter? _reporter;

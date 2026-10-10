@@ -2,12 +2,11 @@
 // it sees the final (Authorization-carrying) headers and redacts them.
 
 import 'package:dio/dio.dart';
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flutter_production_starter/core/network/interceptors/auth_interceptor.dart';
 import 'package:flutter_production_starter/core/network/interceptors/logging_interceptor.dart';
 import 'package:flutter_production_starter/core/network/network_client.dart';
 import 'package:flutter_production_starter/core/network/token_management.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/in_memory_token_storage.dart';
 

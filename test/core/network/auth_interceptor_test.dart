@@ -9,17 +9,15 @@
 // and log the user out for no reason.
 
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flutter_production_starter/core/error/exceptions.dart';
 import 'package:flutter_production_starter/core/network/network_client.dart';
 import 'package:flutter_production_starter/core/network/token_management.dart';
 import 'package:flutter_production_starter/data/datasource/remote/auth_remote_datasource.dart';
+import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/fake_http_adapter.dart';
 import '../../helpers/in_memory_token_storage.dart';
 
 const _refreshPath = '/auth/refresh';
@@ -27,38 +25,10 @@ const _refreshPath = '/auth/refresh';
 /// Fails fast instead of hanging the test runner when a deadlock regresses.
 const _hangTimeout = Duration(seconds: 2);
 
-ResponseBody _json(int statusCode, Map<String, dynamic> body) {
-  return ResponseBody.fromString(
-    jsonEncode(body),
-    statusCode,
-    headers: {
-      Headers.contentTypeHeader: [Headers.jsonContentType],
-    },
-  );
-}
-
-/// Delegates every request to [respond] and records the paths it was asked for.
-class _FakeAdapter implements HttpClientAdapter {
-  final Future<ResponseBody> Function(RequestOptions options) respond;
-  final List<String> paths = [];
-
-  _FakeAdapter({required this.respond});
-
-  int callsTo(String path) => paths.where((p) => p == path).length;
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) {
-    paths.add(options.path);
-    return respond(options);
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
+/// The original request's 401, surfaced with its status code (#13).
+final _unauthorized = isA<ServerException>()
+    .having((e) => e.type, 'type', NetworkErrorCode.badResponse)
+    .having((e) => e.statusCode, 'statusCode', 401);
 
 void main() {
   late NetworkClient client;
@@ -69,7 +39,7 @@ void main() {
   /// Wires the real graph by hand, as `initDI()` does: seeded storage →
   /// TokenManagement (refreshing through the real AuthRemoteDataSource) →
   /// NetworkClient with real interceptors, backed by [adapter].
-  Future<void> setUpClient(_FakeAdapter adapter) async {
+  Future<void> setUpClient(FakeHttpAdapter adapter) async {
     storage = InMemoryTokenStorage(
       accessToken: 'old-access',
       refreshToken: 'old-refresh',
@@ -98,16 +68,16 @@ void main() {
     return () async {
       if (++arrived == count) allArrived.complete();
       await allArrived.future;
-      return _json(401, {'message': 'token expired'});
+      return jsonResponse(401, {'message': 'token expired'});
     };
   }
 
   group('requiresAuth:false requests (#1)', () {
-    late _FakeAdapter adapter;
+    late FakeHttpAdapter adapter;
 
     setUp(() async {
-      adapter = _FakeAdapter(
-        respond: (_) async => _json(401, {'message': 'unauthorized'}),
+      adapter = FakeHttpAdapter(
+        respond: (_) async => jsonResponse(401, {'message': 'unauthorized'}),
       );
       await setUpClient(adapter);
     });
@@ -118,7 +88,7 @@ void main() {
         () async {
       await expectLater(
         client.get<dynamic>('/me').timeout(_hangTimeout),
-        throwsA(isA<ServerException>()),
+        throwsA(_unauthorized),
       );
 
       expect(adapter.paths, ['/me', _refreshPath]);
@@ -139,7 +109,7 @@ void main() {
               requiresAuth: false,
             )
             .timeout(_hangTimeout),
-        throwsA(isA<ServerException>()),
+        throwsA(_unauthorized),
       );
 
       expect(adapter.paths, ['/auth/login']);
@@ -152,19 +122,19 @@ void main() {
     test(
         'a refresh response without an access token ends the session instead '
         'of retrying with an empty token', () async {
-      final adapter = _FakeAdapter(
+      final adapter = FakeHttpAdapter(
         respond: (options) async {
           if (options.path == _refreshPath) {
-            return _json(200, {'refreshToken': 'new-refresh'});
+            return jsonResponse(200, {'refreshToken': 'new-refresh'});
           }
-          return _json(401, {'message': 'token expired'});
+          return jsonResponse(401, {'message': 'token expired'});
         },
       );
       await setUpClient(adapter);
 
       await expectLater(
         client.get<dynamic>('/me').timeout(_hangTimeout),
-        throwsA(isA<ServerException>()),
+        throwsA(_unauthorized),
       );
 
       expect(adapter.paths, ['/me', _refreshPath]);
@@ -179,16 +149,16 @@ void main() {
     test('share a single refresh round-trip and all retry with the new token',
         () async {
       final expired401 = released401s(count: 3);
-      final adapter = _FakeAdapter(
+      final adapter = FakeHttpAdapter(
         respond: (options) async {
           if (options.path == _refreshPath) {
-            return _json(200, {
+            return jsonResponse(200, {
               'accessToken': 'new-access',
               'refreshToken': 'new-refresh',
             });
           }
           if (options.headers['Authorization'] == 'Bearer new-access') {
-            return _json(200, {'path': options.path});
+            return jsonResponse(200, {'path': options.path});
           }
           return expired401();
         },
@@ -212,10 +182,10 @@ void main() {
     test('a failed shared refresh fails every request but logs out only once',
         () async {
       final expired401 = released401s(count: 3);
-      final adapter = _FakeAdapter(
+      final adapter = FakeHttpAdapter(
         respond: (options) async {
           if (options.path == _refreshPath) {
-            return _json(401, {'message': 'refresh token expired'});
+            return jsonResponse(401, {'message': 'refresh token expired'});
           }
           return expired401();
         },
@@ -229,7 +199,7 @@ void main() {
               .then<Object?>((_) => 'ok', onError: (Object e) => e),
       ]).timeout(_hangTimeout);
 
-      expect(outcomes, everyElement(isA<ServerException>()));
+      expect(outcomes, everyElement(_unauthorized));
       expect(adapter.callsTo(_refreshPath), 1);
       expect(unauthorizedCalls, 1);
       expect(storage.accessToken, isNull);
@@ -239,17 +209,17 @@ void main() {
     test(
         'a 401 for a token another request already rotated retries with the '
         'stored token without refreshing again', () async {
-      final adapter = _FakeAdapter(
+      final adapter = FakeHttpAdapter(
         respond: (options) async {
           if (options.headers['Authorization'] == 'Bearer new-access') {
-            return _json(200, {'path': options.path});
+            return jsonResponse(200, {'path': options.path});
           }
           // Another request rotated the tokens while this one was in flight.
           await storage.saveTokens(
             accessToken: 'new-access',
             refreshToken: 'new-refresh',
           );
-          return _json(401, {'message': 'token expired'});
+          return jsonResponse(401, {'message': 'token expired'});
         },
       );
       await setUpClient(adapter);

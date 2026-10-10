@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Handle Widget Visibility in newInstance
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** When a section can be fully hidden based on Bloc/Cubit state (e.g. the API returns empty), decide whether to build it inside the `newInstance` factory (using `Builder` + `context.watch`) instead of always building the widget and returning `SizedBox.shrink()` from its `build`. This avoids inserting an empty widget into the tree.
 
 ### ❌ Bad Example

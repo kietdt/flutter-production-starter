@@ -3,24 +3,17 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_production_starter/app/coordinator/coordinator.dart';
+import 'package:flutter_production_starter/app/di/di.dart';
+import 'package:flutter_production_starter/core/config/app_config.dart';
+import 'package:flutter_production_starter/core/local_storage/shared_prefs_manager.dart';
+import 'package:flutter_production_starter/core/theme/cubit/theme_cubit.dart';
+import 'package:flutter_production_starter/feature/dev_tools/dev_tools_gallery_page.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flutter_production_starter/core/config/app_config.dart';
-import 'package:flutter_production_starter/core/coordinator/coordinator.dart';
-import 'package:flutter_production_starter/core/di/di.dart';
-import 'package:flutter_production_starter/core/local_storage/shared_prefs_manager.dart';
-import 'package:flutter_production_starter/core/theme/theme_cubit.dart';
-import 'package:flutter_production_starter/feature/dev_tools/dev_tools_gallery_page.dart';
-import 'package:flutter_production_starter/main.dart';
-
-/// Boots the real app signed in, so it lands on HomePage.
-Future<void> _bootHome(WidgetTester tester) async {
-  SharedPreferences.setMockInitialValues({'access_token': 'valid-token'});
-  await initDI();
-  await tester.pumpWidget(const MyApp());
-  await tester.pumpAndSettle();
-}
+import '../../helpers/pump_app.dart';
+import '../../helpers/session_prefs.dart';
 
 /// A bare app with one button that asks the Coordinator for the dev tools.
 /// The gallery's ThemeToggleButton needs a ThemeCubit above the Navigator.
@@ -57,14 +50,14 @@ void main() {
   group('Home entry point', () {
     testWidgets('is shown in the dev flavor', (tester) async {
       AppConfig.init(AppConfig.fromFlavor(Flavor.dev));
-      await _bootHome(tester);
+      await pumpApp(tester, prefs: signedInPrefs);
 
       expect(find.text('Navigation'), findsOneWidget);
     });
 
     testWidgets('is absent in the prod flavor', (tester) async {
       AppConfig.init(AppConfig.fromFlavor(Flavor.prod));
-      await _bootHome(tester);
+      await pumpApp(tester, prefs: signedInPrefs);
 
       expect(find.text('Home'), findsWidgets);
       expect(find.text('Navigation'), findsNothing);

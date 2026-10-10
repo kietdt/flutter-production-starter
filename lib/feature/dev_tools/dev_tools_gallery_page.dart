@@ -4,12 +4,12 @@
 
 import 'package:flutter/material.dart';
 
-import '../../core/coordinator/coordinator.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/theme_toggle_button.dart';
-import 'model/dev_showcase.dart';
-import 'registry/showcase_registry.dart';
-import 'widget/showcase_card.dart';
+import 'package:flutter_production_starter/app/coordinator/coordinator.dart';
+import 'package:flutter_production_starter/core/theme/app_colors.dart';
+import 'package:flutter_production_starter/core/theme/theme_toggle_button.dart';
+import 'package:flutter_production_starter/feature/dev_tools/model/dev_showcase.dart';
+import 'package:flutter_production_starter/feature/dev_tools/registry/showcase_registry.dart';
+import 'package:flutter_production_starter/feature/dev_tools/widget/showcase_card.dart';
 
 class DevToolsGalleryPage extends StatelessWidget {
   const DevToolsGalleryPage({super.key});

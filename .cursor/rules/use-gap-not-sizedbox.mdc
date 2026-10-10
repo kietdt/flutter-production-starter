@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Use Gap Instead of SizedBox for Spacing
 
+> **Enforced by:** `tool/check_architecture.sh` (single-line child-less `SizedBox(height|width: …)`; multi-line ones are reviewed)
+
 **Rule:** To keep code style consistent, use `Gap(...)` (from the `gap` package, already a dependency) to create spacing between widgets in a `Column` or `Row`, instead of `SizedBox(height: ...)` / `SizedBox(width: ...)`. `Gap` automatically infers the parent's axis.
 
 ### ❌ Bad Example

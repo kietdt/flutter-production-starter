@@ -1,14 +1,11 @@
-// Feature Widget Module
-// Responsibility: Reusable UI components specific to this feature.
-//
 // Form state lives in LoginCubit (formz inputs); fields are stateless and only
 // rebuild for their own slice of state (see .cursor/rules/bloc-optimization.mdc).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_production_starter/core/localization/app_language_context.dart';
+import 'package:flutter_production_starter/feature/login/cubit/login_cubit.dart';
 import 'package:gap/gap.dart';
-import '../../../core/localization/app_language_context.dart';
-import '../cubit/login_cubit.dart';
 
 class LoginForm extends StatelessWidget {
   const LoginForm({super.key});

@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Main Screen Folder Placement
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** The main screen file of a feature should be placed directly inside the feature's root folder. Do not create a separate `view` folder for it if it is the main screen.
 
 ### ✅ Good Example

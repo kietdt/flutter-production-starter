@@ -14,10 +14,10 @@
 
 - **Clean Architecture** — strict separation across `data` / `domain` / `feature` / `core` layers with one-way dependencies.
 - **Concurrency-safe token refresh** — a `Completer`-based queue serializes concurrent `401`s into a single refresh call, preventing server spam and race conditions. *(See [Token Refresh Flow](#-token-refresh-flow) — the centerpiece.)*
-- **Robust network layer** — `NetworkClient` wraps Dio with generic typed methods (`get<T>`, `post<T>`, …), global timeouts, and native `DioException → ServerException` mapping with strongly-typed error codes.
+- **Robust network layer** — `NetworkClient` wraps Dio with generic typed methods (`get<T>`, `post<T>`, …), global timeouts, and exhaustive `DioException → ServerException → sealed Failure` mapping, localized error text, and the root cause kept for crash reporting.
 - **Native request retry** — `AuthInterceptor` retries the original request via `dio.fetch()` after a refresh, preserving headers and `FormData` without rebuilding the request.
 - **BLoC / Cubit** — predictable state via `flutter_bloc`, with a unified `FeatureStatus` enum instead of one-off state classes.
-- **Global auth state** — `AppAuthCubit` drives authenticated/unauthenticated routing app-wide.
+- **Global auth state** — `AppAuthCubit` drives authenticated/unauthenticated routing app-wide and holds the signed-in user, restored offline from storage on app start.
 - **Dependency Injection** — `get_it` service locator with lazy singletons.
 - **Local storage** — `SharedPrefsManager` wrapper over `shared_preferences`, created once in `initDI()` and injected (no static singletons — everything goes through `get_it` + constructors).
 - **Documented conventions** — enforced via [`AI_RULE.md`](AI_RULE.md) and `.cursor/rules/`.
@@ -31,7 +31,7 @@ Clean Architecture with a one-way dependency flow — outer layers depend inward
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │  FEATURE (UI)                                                │
-│  Pages • Widgets • Cubits (LoginCubit, HomeCubit)            │
+│  Pages • Widgets • Cubits (LoginCubit)                       │
 │  Renders state, dispatches intents.                          │
 └───────────────────────────────┬──────────────────────────────┘
                                 │ calls
@@ -54,7 +54,7 @@ Clean Architecture with a one-way dependency flow — outer layers depend inward
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**Login flow:** `LoginPage` → `LoginCubit.login()` → `LoginUseCase` → `AuthRepository` → `AuthRemoteDataSource` → `NetworkClient`. On success, `AppAuthCubit` flips to `authenticated` and the app renders `HomePage`.
+**Login flow:** `LoginPage` → `LoginCubit.login()` → `LoginUseCase` → `AuthRepository` → `AuthRemoteDataSource` → `NetworkClient`. On success the tokens and the user are stored locally, `AppAuthCubit.loggedIn(user:)` flips to `authenticated`, and the app renders `HomePage`. On the next launch `checkAuth()` restores the user from storage without a network call (a session needs both the access token and the cached user); logout — manual or after a failed refresh — clears both.
 
 ---
 
@@ -97,47 +97,83 @@ Key guarantees:
 
 ---
 
+## 🧯 Error Handling
+
+```
+DioException ──NetworkClient──▶ ServerException ──Repository──▶ Failure ──Widget──▶ failure.message(context.l10n)
+                (type, statusCode,                (sealed)
+                 serverCode, serverMessage)
+```
+
+| `ServerException.type` | `Failure` | Text (`AppLanguage`) |
+|---|---|---|
+| `timeout` | `NetworkFailure(timeout)` | `errorTimeout` |
+| `connectionError`, `badCertificate` | `NetworkFailure(noConnection)` | `errorNoConnection` |
+| `badResponse` 401 | `UnauthorizedFailure` | `errorUnauthorized` (login: `loginInvalidCredentials`) |
+| `badResponse` other | `ServerFailure(statusCode, serverCode, serverMessage)` | `errorServer` |
+| `cancelled` | `CancelledFailure` | `errorCancelled` |
+| `unknown` / anything else | `UnknownFailure(cause, stackTrace)` | `errorUnknown` |
+
+Failures never carry UI text, so messages follow the active language, and unexpected errors keep their root cause for the `ErrorReporter`.
+
+**Adapting it to your backend** — three hooks, nothing else to touch:
+1. **Error-body format** — `NetworkClient._parseErrorBody` reads `{"code", "message"}` by default; change it for shapes like `{"error": {...}}`.
+2. **Business errors** (`OTP_EXPIRED`, `ACCOUNT_LOCKED`, …) — don't add `Failure` subtypes; map `ServerFailure.serverCode` with your own enum (e.g. `ApiErrorCode.fromServerCode`) to `context.l10n` strings.
+3. **Server messages** — set `useServerErrorMessage: true` in `AppConfig.fromFlavor` only if your backend returns friendly, localized `message`s; otherwise the generic `errorServer` text is shown.
+
+---
+
 ## 📁 Project Structure
 
 ```
 lib/
-├── core/                          # Cross-cutting infrastructure
-│   ├── auth/                      # Global auth state (AppAuthCubit/State)
-│   ├── di/                        # get_it service locator (initDI)
+├── app/                           # Composition layer — the only layer that may import every other
+│   ├── auth/cubit/                # Global auth state (AppAuthCubit/State)
+│   ├── coordinator/               # Coordinator — the only place that uses Navigator
+│   ├── di/                        # get_it composition root (sl, initDI)
+│   ├── router/                    # AuthGate (Login ⇄ Home)
+│   ├── app.dart                   # MyApp (MaterialApp + global BlocProviders)
+│   └── bootstrap.dart             # bootstrap(flavor): error handling → config → DI → runApp
+│
+├── core/                          # Cross-cutting infrastructure (imports only core)
+│   ├── config/                    # AppConfig + Flavor
 │   ├── error/                     # ServerException, Failure, NetworkErrorCode
 │   ├── local_storage/             # SharedPrefsManager (registered in get_it)
-│   ├── localization/              # Localization scaffolding
+│   ├── localization/              # AppLanguage (en/vi), cubit/ (LocaleCubit), failure_message
 │   ├── network/
 │   │   ├── interceptors/          # AuthInterceptor, LoggingInterceptor
 │   │   ├── network_client.dart    # Dio wrapper, typed methods, error mapping
 │   │   └── token_management.dart  # Completer-based concurrent refresh
-│   ├── theme/                     # App theme
+│   ├── theme/                     # App theme + cubit/ (ThemeCubit)
 │   ├── utils/                     # AppLogger, constants, FeatureStatus
 │   └── widget/                    # Shared widgets (CustomButton)
 │
-├── data/                          # Data layer
+├── data/                          # Data layer (imports domain + core)
 │   ├── datasource/{remote,local}/ # AuthRemoteDataSource, AuthLocalDataSource
 │   ├── model/                     # UserModel, AuthResponseModel (toEntity())
 │   └── repository/                # AuthRepositoryImpl
 │
-├── domain/                        # Pure business layer
+├── domain/                        # Pure business layer (imports core/error|utils only)
 │   ├── entity/                    # UserEntity
 │   ├── repository/                # AuthRepository (interface)
 │   └── usecase/                   # LoginUseCase, LogoutUseCase
 │
-├── feature/                       # UI features
-│   ├── home/                      # HomePage + HomeCubit
-│   └── login/                     # LoginPage, LoginForm + LoginCubit
+├── feature/                       # UI features (domain, core, app/coordinator|auth)
+│   ├── dev_tools/                 # Theme gallery (hidden in prod)
+│   ├── home/                      # HomePage (greets AppAuthState.user)
+│   └── login/                     # LoginPage.newInstance(), LoginForm, LoginCubit, di/
 │
-└── main.dart                      # Bootstrap: init storage → DI → runApp
+└── main*.dart                     # Entry points → app/bootstrap.dart
 ```
+
+Layer boundaries are enforced by `tool/check_architecture.sh` (run in CI) — see `.cursor/rules/layer-dependencies.mdc`.
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Flutter SDK `3.27.4` (Dart `3.6.2`)
+- Flutter SDK `3.29.3` (Dart `3.7.2`) — the version CI uses (`.github/workflows/ci.yml`)
 - A running backend exposing `/auth/login` and `/auth/refresh`
 
 ### Setup
@@ -179,7 +215,8 @@ Per-flavor behavior lives on `AppConfig`: `prod` turns off network logging
 
 ```bash
 flutter analyze   # static analysis — should report: No issues found!
-flutter test      # run the test suite (94 tests)
+./tool/check_architecture.sh  # layer boundaries + grep-checked rules
+flutter test      # run the test suite (126 tests)
 ```
 
 ### Release signing (Android)
@@ -230,16 +267,16 @@ Conventions are documented and enforced via [`AI_RULE.md`](AI_RULE.md) and `.cur
 
 ## 🗺️ Roadmap
 
-Planned enhancements (tracked in `PLAN.md`):
+Planned enhancements (tracked in `docs/PLAN.md`):
 
 - [x] **Theme** — Material 3 (`ColorScheme.fromSeed`) + dark mode via `ThemeCubit`
 - [x] **Navigation** — Flutter's built-in `Navigator` via a `Coordinator`, plus an `AuthGate` widget for the top-level auth flow
-- [x] **Error handling** — map `Exception → Failure` so the UI never sees raw `e.toString()`
+- [x] **Error handling** — sealed `Failure` model, localized messages via `context.l10n`, root cause kept for crash reporting
 - [x] **Form validation** — `formz` inputs for email/password
 - [x] **Localization** — manual i18n (English + Vietnamese), no codegen — abstract `AppLanguage`, read in widgets via `context.l10n` (rebuilds on language switch)
-- [x] **Tests** — `bloc_test` + `mocktail` covering cubits, usecases, refresh concurrency, and widgets (94 tests)
+- [x] **Tests** — `bloc_test` + `mocktail` covering cubits, usecases, refresh concurrency, and widgets (126 tests)
 - [x] **Flavors** — dev / staging / prod entry points + per-flavor config (`AppConfig`)
-- [x] **CI/CD** — GitHub Actions (analyze → test on push/PR; debug + release APK build on manual run)
+- [x] **CI/CD** — GitHub Actions (format → architecture checks → analyze → test + coverage on push/PR; debug + release APK build on manual run)
 - [x] **Release signing** — Android release key via `key.properties` + R8 shrinking
 
 ---

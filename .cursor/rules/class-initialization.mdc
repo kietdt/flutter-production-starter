@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Class and Model Initialization
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** Use named parameters when initializing ANY class, model, entity, exception, or failure. This applies to all constructors across the project.
 
 ### ✅ Good Example
@@ -17,12 +19,14 @@ class UserModel {
 }
 
 class ServerException implements Exception {
-  final String message;
-  ServerException({this.message = 'Server Exception'});
+  final NetworkErrorCode type;
+  final int? statusCode;
+  const ServerException({required this.type, this.statusCode});
 }
 
-class ServerFailure extends Failure {
-  const ServerFailure({required super.message});
+final class ServerFailure extends Failure {
+  final int? statusCode;
+  const ServerFailure({this.statusCode});
 }
 ```
 
@@ -36,11 +40,12 @@ class UserModel {
 }
 
 class ServerException implements Exception {
-  final String message;
-  ServerException([this.message = 'Server Exception']);
+  final NetworkErrorCode type;
+  const ServerException(this.type);
 }
 
-class ServerFailure extends Failure {
-  const ServerFailure(super.message);
+final class ServerFailure extends Failure {
+  final int? statusCode;
+  const ServerFailure([this.statusCode]);
 }
 ```

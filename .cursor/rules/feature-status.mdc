@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Standardized Feature Status
 
+> **Enforced by:** `tool/check_architecture.sh` (`== FeatureStatus.` outside `feature_status.dart`)
+
 **Rule:** Use a common `FeatureStatus` enum for state management across all screens. Do NOT create abstract status classes for each feature (like `AuthLoading`, `AuthSuccess`, etc.).
 
 ### ✅ Good Example

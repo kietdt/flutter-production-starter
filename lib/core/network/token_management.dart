@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'token_pair.dart';
-import 'token_storage.dart';
+import 'package:flutter_production_starter/core/network/token_pair.dart';
+import 'package:flutter_production_starter/core/network/token_storage.dart';
 
 /// Exchanges a refresh token for a new [TokenPair] (the `/auth/refresh` call).
 /// Wired in DI to `AuthRemoteDataSource.refresh`, keeping core free of data.

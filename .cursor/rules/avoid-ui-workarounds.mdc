@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Avoid UI Workarounds
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** Do not use hacks such as constantly changing a `ValueKey` to force Flutter to rebuild the whole widget tree, or abusing Bloc/Cubit state to smuggle navigation parameters. Use the app's proper mechanisms (navigation/router, deep links, real state fields) instead.
 
 ### ❌ Bad Example

@@ -4,25 +4,45 @@
 # The issues identified by the analyzer are surfaced in the UI of Dart-enabled
 # IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
 # invoked from the command line by running `flutter analyze`.
+#
+# Project rules that a lint can enforce are switched on here; the rest are
+# checked by tool/check_architecture.sh. See AI_RULE.md ("Enforced by").
 
 # The following line activates a set of recommended lints for Flutter apps,
-# packages, and plugins designed to encourage good coding practices.
+# packages, and plugins designed to encourage good coding practices
+# (includes avoid_print and use_build_context_synchronously).
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  language:
+    strict-casts: true
+    strict-raw-types: true
+    strict-inference: true
+  errors:
+    unawaited_futures: error
+
 linter:
-  # The lint rules applied to this project can be customized in the
-  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
-  # included above or to enable additional rules. A list of all available lints
-  # and their documentation is published at https://dart.dev/lints.
-  #
-  # Instead of disabling a lint rule for the entire project in the
-  # section below, it can also be suppressed for a single line of code
-  # or a specific dart file by using the `// ignore: name_of_lint` and
-  # `// ignore_for_file: name_of_lint` syntax on the line or in the file
-  # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # Package imports make files movable without rewriting `../../..` paths
+    # and let tool/check_architecture.sh grep layer boundaries (#10).
+    - always_use_package_imports
+    # Only Exception/Error subtypes may be thrown — locks `Failure implements
+    # Exception` in place (#13).
+    - only_throw_errors
+    - unawaited_futures
+    - avoid_dynamic_calls
+    - prefer_single_quotes
+    - directives_ordering
+    - prefer_const_constructors
+    - prefer_final_locals
+    - cancel_subscriptions
+    - close_sinks
+    # Not enabled on purpose:
+    # - require_trailing_commas: conflicts with the Dart >= 3.7 formatter,
+    #   which manages trailing commas itself.
+    # - discarded_futures: mostly false positives in blocTest/when() and in
+    #   `onPressed: () => cubit.x()`; unawaited_futures covers real bugs.
+    # - sort_constructors_first: fields-before-constructor is the house style.
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

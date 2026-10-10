@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import '../../utils/app_logger.dart';
-import '../log_redactor.dart';
+import 'package:flutter_production_starter/core/network/log_redactor.dart';
+import 'package:flutter_production_starter/core/utils/app_logger.dart';
 
 /// Logs requests, responses and errors with secrets masked by [LogRedactor].
 ///
@@ -28,7 +28,8 @@ class LoggingInterceptor extends Interceptor {
   }
 
   @override
-  void onResponse(Response response, ResponseInterceptorHandler handler) {
+  void onResponse(
+      Response<dynamic> response, ResponseInterceptorHandler handler) {
     AppLogger.info(
       'RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}',
       name: 'NetworkClient',

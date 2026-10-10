@@ -4,6 +4,8 @@ globs: ["**/*_repository_impl.dart"]
 ---
 # Repository JSON Parsing
 
+> **Enforced by:** `tool/check_architecture.sh` (`json['…']` in `lib/data/`) — delegation to `fromJson` is reviewed
+
 **Rule:** Repositories must not parse raw JSON data using `Map` keys directly (e.g. `response['key']`). Instead, they must delegate JSON parsing to Data Models using `.fromJson` methods. This ensures type safety and centralizes the mapping logic within the model layer.
 
 ### ✅ Good Example

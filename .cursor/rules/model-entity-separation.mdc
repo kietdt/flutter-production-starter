@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Model and Entity Separation
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** Models should NOT extend Entities. Models must be independent and include a `toEntity()` method to convert them to their corresponding Domain Entities.
 
 ### ✅ Good Example

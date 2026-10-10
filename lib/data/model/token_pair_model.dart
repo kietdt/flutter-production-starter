@@ -2,8 +2,8 @@
 // Responsibility: Token pair returned by `/auth/refresh` (no `user` object,
 // unlike the login response).
 
-import '../../core/network/token_pair.dart';
-import '../../core/utils/map_ext.dart';
+import 'package:flutter_production_starter/core/network/token_pair.dart';
+import 'package:flutter_production_starter/core/utils/map_ext.dart';
 
 class TokenPairModel {
   final String accessToken;

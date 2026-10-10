@@ -1,6 +1,3 @@
-// Core Utils Module
-// Responsibility: Shared constants, helper functions, and extensions.
-
 class AppConstants {
   /// Local backend used by the `dev` flavor. Per-environment base URLs are
   /// resolved in `core/config/app_config.dart` (`AppConfig.fromFlavor`).
@@ -22,4 +19,7 @@ class StorageKeys {
   /// session across app updates.
   static const String accessToken = 'access_token';
   static const String refreshToken = 'refresh_token';
+
+  /// The signed-in user (JSON), restored on app start without the network.
+  static const String cachedUser = 'cached_user';
 }

@@ -1,5 +1,5 @@
-import '../../core/utils/map_ext.dart';
-import 'user_model.dart';
+import 'package:flutter_production_starter/core/utils/map_ext.dart';
+import 'package:flutter_production_starter/data/model/user_model.dart';
 
 class AuthResponseModel {
   final String accessToken;

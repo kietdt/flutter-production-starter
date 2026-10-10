@@ -4,8 +4,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/theme_toggle_button.dart';
-import '../widget/showcase_section.dart';
+import 'package:flutter_production_starter/core/theme/theme_toggle_button.dart';
+import 'package:flutter_production_starter/core/widget/custom_button.dart';
+import 'package:flutter_production_starter/feature/dev_tools/widget/showcase_section.dart';
 
 class ButtonsShowcasePage extends StatelessWidget {
   const ButtonsShowcasePage({super.key});
@@ -53,6 +54,16 @@ class ButtonsShowcasePage extends StatelessWidget {
             ),
           ),
           ShowcaseSection(
+            title: 'CustomButton',
+            description: 'Shared app button (core/widget/custom_button.dart). '
+                'Restyle it once to change every call site.',
+            child: ShowcaseWrap(
+              children: [
+                CustomButton(onPressed: () {}, child: const Text('Enabled')),
+              ],
+            ),
+          ),
+          ShowcaseSection(
             title: 'OutlinedButton & TextButton',
             description: 'Material 3 defaults (not themed).',
             child: ShowcaseWrap(
@@ -95,9 +106,9 @@ class ButtonsShowcasePage extends StatelessWidget {
               ],
             ),
           ),
-          ShowcaseSection(
+          const ShowcaseSection(
             title: 'SegmentedButton',
-            child: const _SegmentedDemo(),
+            child: _SegmentedDemo(),
           ),
         ],
       ),

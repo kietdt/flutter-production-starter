@@ -1,4 +1,4 @@
-import '../repository/auth_repository.dart';
+import 'package:flutter_production_starter/domain/repository/auth_repository.dart';
 
 class LogoutUseCase {
   final AuthRepository repository;

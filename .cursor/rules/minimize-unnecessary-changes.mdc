@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Minimize Unnecessary Changes
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** When working with code that is already working and stable, do not rewrite or restructure the original flow unless the new requirement truly requires it. Reworking tested logic risks breaking other features that depend on it. Prefer additive, targeted changes over "clean rewrites".
 
 ### ✅ Good Example

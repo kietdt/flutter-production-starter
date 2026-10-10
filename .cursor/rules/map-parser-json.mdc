@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Use MapParser Extension for Safe JSON Parsing
 
+> **Enforced by:** `tool/check_architecture.sh` (`json['…']` in `lib/data/`)
+
 **Rule:** When parsing values out of a JSON/`Map` (typically in a Model's `fromJson`), always use the `MapParser` extension defined in `lib/core/utils/map_ext.dart` instead of raw bracket access with manual casts and null handling (`json['key'] as int? ?? 0`, `json['key']?.toString() ?? ''`). These helpers already handle type coercion, null safety and edge cases in one place.
 
 ### Available helpers

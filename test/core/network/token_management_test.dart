@@ -7,10 +7,9 @@
 
 import 'dart:async';
 
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flutter_production_starter/core/network/token_management.dart';
 import 'package:flutter_production_starter/core/network/token_pair.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/in_memory_token_storage.dart';
 

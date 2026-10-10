@@ -22,7 +22,7 @@ class Parse {
     }
   }
 
-  static String asString(dynamic value, {String defaultValue = ""}) {
+  static String asString(dynamic value, {String defaultValue = ''}) {
     return asStringOrNull(value) ?? defaultValue;
   }
 
@@ -84,7 +84,7 @@ class Parse {
   static DateTime? asSecondToDate(dynamic value,
       {bool isUtc = false, DateTime? defaultValue}) {
     try {
-      var valueInt = asIntOrNull(value);
+      final valueInt = asIntOrNull(value);
       if (valueInt == null) {
         return defaultValue;
       }

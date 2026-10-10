@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Type Safety and Linter Cleanliness
 
+> **Enforced by:** `strict-casts`, `strict-raw-types`, `strict-inference`, lint `avoid_dynamic_calls`, `flutter analyze` in CI
+
 **Rule:** Do not access properties or call methods directly on a `dynamic` value without a type check. Cast explicitly, check for null, and resolve linter warnings (including redundant casts) so the codebase stays clean.
 
 ### ❌ Bad Example

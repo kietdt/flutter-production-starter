@@ -3,12 +3,11 @@
 // Dialog, BottomSheet, Tooltip — plus progress indicators.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_production_starter/app/coordinator/coordinator.dart';
+import 'package:flutter_production_starter/core/theme/app_colors.dart';
+import 'package:flutter_production_starter/core/theme/theme_toggle_button.dart';
+import 'package:flutter_production_starter/feature/dev_tools/widget/showcase_section.dart';
 import 'package:gap/gap.dart';
-
-import '../../../core/coordinator/coordinator.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/theme_toggle_button.dart';
-import '../widget/showcase_section.dart';
 
 class FeedbackShowcasePage extends StatelessWidget {
   const FeedbackShowcasePage({super.key});
@@ -72,10 +71,10 @@ class FeedbackShowcasePage extends StatelessWidget {
               ),
             ),
           ),
-          ShowcaseSection(
+          const ShowcaseSection(
             title: 'Progress indicators',
             child: Row(
-              children: const [
+              children: [
                 CircularProgressIndicator(),
                 Gap(AppSpacing.lg),
                 Expanded(child: LinearProgressIndicator()),
@@ -105,11 +104,11 @@ class FeedbackShowcasePage extends StatelessWidget {
         content: const Text('Supporting text explaining the action.'),
         actions: [
           TextButton(
-            onPressed: () => Coordinator.pop(context),
+            onPressed: () => Coordinator.pop<void>(context),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Coordinator.pop(context),
+            onPressed: () => Coordinator.pop<void>(context),
             child: const Text('Confirm'),
           ),
         ],
@@ -132,7 +131,7 @@ class FeedbackShowcasePage extends StatelessWidget {
             const Text('Modal content anchored to the bottom of the screen.'),
             const Gap(AppSpacing.lg),
             FilledButton(
-              onPressed: () => Coordinator.pop(context),
+              onPressed: () => Coordinator.pop<void>(context),
               child: const Text('Close'),
             ),
           ],

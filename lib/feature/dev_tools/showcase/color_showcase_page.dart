@@ -3,11 +3,10 @@
 // sees exactly what `ColorScheme.fromSeed(seedColor: AppColors.seed)` produces.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_production_starter/core/theme/app_colors.dart';
+import 'package:flutter_production_starter/core/theme/theme_toggle_button.dart';
+import 'package:flutter_production_starter/feature/dev_tools/widget/showcase_section.dart';
 import 'package:gap/gap.dart';
-
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/theme_toggle_button.dart';
-import '../widget/showcase_section.dart';
 
 class ColorShowcasePage extends StatelessWidget {
   const ColorShowcasePage({super.key});
@@ -49,7 +48,7 @@ class ColorShowcasePage extends StatelessWidget {
             title: 'Seed',
             description: 'Whole scheme is generated from AppColors.seed via '
                 'ColorScheme.fromSeed. Brightness: ${scheme.brightness.name}.',
-            child: _SwatchTile(
+            child: const _SwatchTile(
               role: _ColorRole('seed', AppColors.seed, Colors.white),
             ),
           ),

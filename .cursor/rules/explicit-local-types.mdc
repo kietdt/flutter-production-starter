@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Explicit Types for Non-Obvious Local Variables
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** When a local variable's type is not obvious from the right-hand side (results of conditionals, `.first`, `.firstWhere`, nullable expressions), declare the type explicitly (including `?` when nullable) instead of relying on `final`/`var` inference. This makes the code self-documenting and avoids accidental wrong inference (e.g. `dynamic` or an unexpected supertype).
 
 ### ❌ Bad Example

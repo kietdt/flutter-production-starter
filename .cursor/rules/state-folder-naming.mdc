@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # State Management Folder Naming
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** When a feature contains real logic, separate UI, Bloc/Cubit and State into their own files. Name the folder that holds the state-management classes according to what is used:
 - If a `Cubit` is used, name the folder `cubit/`.
 - If a `Bloc` is used, name the folder `bloc/`.

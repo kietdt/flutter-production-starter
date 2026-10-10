@@ -1,8 +1,5 @@
-// Domain Usecase Module
-// Responsibility: Orchestrate business rules. Contains specific actions requested by the user.
-
-import '../entity/user_entity.dart';
-import '../repository/auth_repository.dart';
+import 'package:flutter_production_starter/domain/entity/user_entity.dart';
+import 'package:flutter_production_starter/domain/repository/auth_repository.dart';
 
 class LoginUseCase {
   final AuthRepository repository;

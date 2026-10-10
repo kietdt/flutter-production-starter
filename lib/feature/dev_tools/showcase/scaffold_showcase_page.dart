@@ -4,11 +4,10 @@
 // NavigationBar, TabBar and assorted body widgets.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_production_starter/app/coordinator/coordinator.dart';
+import 'package:flutter_production_starter/core/theme/app_colors.dart';
+import 'package:flutter_production_starter/core/theme/theme_toggle_button.dart';
 import 'package:gap/gap.dart';
-
-import '../../../core/coordinator/coordinator.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/theme_toggle_button.dart';
 
 class ScaffoldShowcasePage extends StatefulWidget {
   const ScaffoldShowcasePage({super.key});
@@ -120,7 +119,7 @@ class _ScaffoldShowcasePageState extends State<ScaffoldShowcasePage> {
   Widget _buildDrawer(BuildContext context) {
     final theme = Theme.of(context);
     return NavigationDrawer(
-      onDestinationSelected: (_) => Coordinator.pop(context),
+      onDestinationSelected: (_) => Coordinator.pop<void>(context),
       children: [
         DrawerHeader(
           decoration: BoxDecoration(color: theme.colorScheme.primaryContainer),

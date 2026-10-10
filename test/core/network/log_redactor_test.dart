@@ -1,9 +1,8 @@
 // Unit tests for LogRedactor (#5) — secrets must never reach the network log.
 
 import 'package:dio/dio.dart';
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flutter_production_starter/core/network/log_redactor.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   const mask = LogRedactor.mask;

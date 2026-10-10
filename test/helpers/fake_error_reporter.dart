@@ -17,7 +17,7 @@ class ReportedError {
 
 /// Records every report; throws [throwOnReport] instead when it is set.
 class FakeErrorReporter implements ErrorReporter {
-  final Object? throwOnReport;
+  final Exception? throwOnReport;
   final List<ReportedError> reports = [];
 
   FakeErrorReporter({this.throwOnReport});

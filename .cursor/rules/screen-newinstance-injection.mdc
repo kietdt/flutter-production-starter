@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Screen Initialization With Injection
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** Do not use the legacy `static Route route()` pattern. Expose the screen through a `static Widget newInstance()` factory. Call the feature's dependency-injection setup (if any) at the start of that method, before creating and returning the `BlocProvider`. This guarantees dependencies are registered before the Cubit/Bloc resolves them.
 
 ### ❌ Bad Example

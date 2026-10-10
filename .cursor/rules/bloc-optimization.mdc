@@ -4,6 +4,8 @@ globs: ["**/*.dart"]
 ---
 # Bloc Builder and Listener Optimization
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** Always use `buildWhen` and `listenWhen` when using `BlocBuilder`, `BlocListener`, or `BlocConsumer`. This prevents unnecessary widget rebuilds or side-effect triggers when unrelated parts of the state change.
 
 ### ✅ Good Example

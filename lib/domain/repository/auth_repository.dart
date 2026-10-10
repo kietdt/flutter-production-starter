@@ -1,14 +1,10 @@
-// Domain Repository Module
-// Responsibility: Abstract interfaces for data operations.
-//
-// Implementation belongs in the data layer.
-
-import '../entity/user_entity.dart';
+import 'package:flutter_production_starter/domain/entity/user_entity.dart';
 
 abstract class AuthRepository {
   Future<UserEntity> login(String email, String password);
   Future<void> logout();
 
-  /// Whether a session (access token) is stored locally.
-  bool hasSession();
+  /// The user of the locally stored session, or `null` when there is none.
+  /// A session needs both an access token and the cached user.
+  UserEntity? currentUser();
 }
