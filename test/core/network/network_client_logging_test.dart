@@ -7,11 +7,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_production_starter/core/network/interceptors/auth_interceptor.dart';
 import 'package:flutter_production_starter/core/network/interceptors/logging_interceptor.dart';
 import 'package:flutter_production_starter/core/network/network_client.dart';
+import 'package:flutter_production_starter/core/network/token_management.dart';
+
+import '../../helpers/in_memory_token_storage.dart';
 
 void main() {
   List<Interceptor> interceptorsOf({required bool enableLogging}) {
     final NetworkClient client = NetworkClient(
       baseUrl: 'https://api.test',
+      tokenManagement: TokenManagement(
+        storage: InMemoryTokenStorage(),
+        refresher: (_) => throw UnimplementedError(),
+      ),
       onUnauthorized: () {},
       enableLogging: enableLogging,
     );

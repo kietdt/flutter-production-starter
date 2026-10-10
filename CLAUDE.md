@@ -40,8 +40,8 @@ lib/
 └── feature/        # feature-first UI: <feature>/<feature>_page.dart + cubit/ + widget/ + di/
 ```
 
-- **DI:** `lib/core/di/di.dart` exposes `sl = GetIt.instance` and `initDI()`. Global singletons (network client, auth repo/usecases, `AppAuthCubit`, `ThemeCubit`, `LocaleCubit`) are registered there.
-- **Flavors:** `AppConfig` + `Flavor` (dev/staging/prod). Entry points: `main.dart` (defaults to dev), `main_dev.dart`, `main_staging.dart`, `main_prod.dart`. `bootstrap(flavor)` installs global error handling (`GlobalErrorHandler`, `AppBlocObserver`), pins config, runs `initApp()` (init `SharedPrefsManager`, then `initDI()`), then `runApp`.
+- **DI:** `lib/core/di/di.dart` exposes `sl = GetIt.instance` and `Future<void> initDI()` — the composition root. Everything (`SharedPrefsManager`, `AuthLocalDataSource`, `TokenManagement`, network client, auth repo/usecases, `AppAuthCubit`, `ThemeCubit`, `LocaleCubit`) is registered there and receives dependencies via constructors. No static `.instance` singletons; core/data/domain classes never call `sl` themselves. Tests: `SharedPreferences.setMockInitialValues(...)` then `await initDI()`; unit tests inject fakes (e.g. `test/helpers/in_memory_token_storage.dart`).
+- **Flavors:** `AppConfig` + `Flavor` (dev/staging/prod). Entry points: `main.dart` (defaults to dev), `main_dev.dart`, `main_staging.dart`, `main_prod.dart`. `bootstrap(flavor)` installs global error handling (`GlobalErrorHandler`, `AppBlocObserver`), pins config, runs `initApp()` (`await initDI()`, which also loads `SharedPrefsManager`), then `runApp`.
 - **Auth/routing:** a single `AppAuthCubit` drives the `AuthGate` widget (`lib/core/router/app_router.dart`) that swaps between `LoginPage`/`HomePage`; login/logout just flip its status and the widget tree rebuilds. Screen-to-screen navigation goes through `Coordinator` (`lib/core/coordinator/coordinator.dart`) using Flutter's `Navigator`.
 - **Localization:** custom `AppLanguage` (en/vi) with `LocaleCubit`; widgets read strings via `context.l10n` (never a static/global language — it won't rebuild on switch); theme via `ThemeCubit`. Toggle buttons in `core/`.
 

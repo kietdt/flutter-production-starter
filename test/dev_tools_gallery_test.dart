@@ -14,9 +14,11 @@ import 'package:flutter_production_starter/core/theme/theme_cubit.dart';
 import 'package:flutter_production_starter/feature/dev_tools/dev_tools_gallery_page.dart';
 import 'package:flutter_production_starter/feature/dev_tools/registry/showcase_registry.dart';
 
+late SharedPrefsManager prefs;
+
 Widget _wrap(Widget child) {
   return BlocProvider(
-    create: (_) => ThemeCubit(prefs: SharedPrefsManager.instance),
+    create: (_) => ThemeCubit(prefs: prefs),
     child: MaterialApp(
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
@@ -28,7 +30,7 @@ Widget _wrap(Widget child) {
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await SharedPrefsManager.instance.init();
+    prefs = await SharedPrefsManager.create();
   });
 
   testWidgets('gallery renders one card per registered showcase',

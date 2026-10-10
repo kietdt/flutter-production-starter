@@ -10,9 +10,11 @@ import 'package:flutter_production_starter/core/localization/languages/vi_langua
 import 'package:flutter_production_starter/core/localization/locale_cubit.dart';
 
 void main() {
+  late SharedPrefsManager prefs;
+
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await SharedPrefsManager.instance.init();
+    prefs = await SharedPrefsManager.create();
   });
 
   group('AppLanguage', () {
@@ -34,7 +36,7 @@ void main() {
   });
 
   group('LocaleCubit', () {
-    LocaleCubit build() => LocaleCubit(prefs: SharedPrefsManager.instance);
+    LocaleCubit build() => LocaleCubit(prefs: prefs);
 
     test('setLocale updates state and persists', () async {
       final cubit = build();
@@ -42,7 +44,7 @@ void main() {
       await cubit.setLocale(AppLocale.vi);
 
       expect(cubit.state.locale, AppLocale.vi);
-      expect(SharedPrefsManager.instance.getString('locale'), 'vi');
+      expect(prefs.getString('locale'), 'vi');
     });
 
     test('toggleLocale flips en <-> vi', () async {
@@ -57,7 +59,7 @@ void main() {
     });
 
     test('loadLocale restores the persisted locale', () async {
-      await SharedPrefsManager.instance.setString('locale', 'vi');
+      await prefs.setString('locale', 'vi');
 
       final cubit = build()..loadLocale();
 

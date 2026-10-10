@@ -3,6 +3,7 @@ import '../error/exceptions.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/logging_interceptor.dart';
 import 'request_extra_keys.dart';
+import 'token_management.dart';
 
 /// Core Network Module
 /// Responsibility: Handle HTTP requests, interceptors, and network configuration.
@@ -11,6 +12,7 @@ class NetworkClient {
 
   NetworkClient({
     required String baseUrl,
+    required TokenManagement tokenManagement,
     required void Function() onUnauthorized,
     bool enableLogging = false,
     int connectionTimeout = 30000,
@@ -31,6 +33,7 @@ class NetworkClient {
     _dio.interceptors.addAll([
       AuthInterceptor(
         dio: _dio,
+        tokenManagement: tokenManagement,
         onUnauthorized: onUnauthorized,
       ),
       // After AuthInterceptor so the final headers are logged (redacted).

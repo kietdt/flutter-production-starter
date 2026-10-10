@@ -5,10 +5,12 @@ import '../token_management.dart';
 
 class AuthInterceptor extends Interceptor {
   final Dio dio;
+  final TokenManagement tokenManagement;
   final void Function() onUnauthorized;
 
   AuthInterceptor({
     required this.dio,
+    required this.tokenManagement,
     required this.onUnauthorized,
   });
 
@@ -22,7 +24,7 @@ class AuthInterceptor extends Interceptor {
       return super.onRequest(options, handler);
     }
 
-    final token = await TokenManagement.instance.getToken();
+    final token = await tokenManagement.getToken();
     if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
@@ -48,8 +50,7 @@ class AuthInterceptor extends Interceptor {
       }
 
       // If we don't have a refresh token, we cannot refresh.
-      final currentRefreshToken =
-          TokenManagement.instance.getRefreshTokenSync();
+      final currentRefreshToken = tokenManagement.getRefreshTokenSync();
       if (currentRefreshToken == null || currentRefreshToken.isEmpty) {
         return super.onError(err, handler);
       }
@@ -62,7 +63,7 @@ class AuthInterceptor extends Interceptor {
       final requestToken = err.requestOptions.headers['Authorization']
           ?.toString()
           .replaceFirst('Bearer ', '');
-      final currentToken = TokenManagement.instance.getAccessTokenSync();
+      final currentToken = tokenManagement.getAccessTokenSync();
 
       if (currentToken != null &&
           currentToken.isNotEmpty &&
@@ -77,7 +78,7 @@ class AuthInterceptor extends Interceptor {
       // refreshToken() is idempotent: the first 401 starts the refresh, later
       // ones join it. Only the starter ends the session on failure, so
       // onUnauthorized fires once no matter how many requests were waiting.
-      final startsRefresh = !TokenManagement.instance.isRefreshing;
+      final startsRefresh = !tokenManagement.isRefreshing;
       String? newToken;
       try {
         AppLogger.info(
@@ -86,7 +87,7 @@ class AuthInterceptor extends Interceptor {
               : 'Waiting for ongoing token refresh...',
           name: 'AuthInterceptor',
         );
-        newToken = await TokenManagement.instance.refreshToken();
+        newToken = await tokenManagement.refreshToken();
       } catch (e) {
         AppLogger.error(
           'Token refresh failed',
@@ -99,7 +100,7 @@ class AuthInterceptor extends Interceptor {
         return _retryRequest(err, newToken, handler);
       }
       if (startsRefresh) {
-        await TokenManagement.instance.clearTokens();
+        await tokenManagement.clearTokens();
         onUnauthorized();
       }
       return handler.next(err);

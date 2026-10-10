@@ -7,11 +7,19 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_production_starter/core/error/exceptions.dart';
 import 'package:flutter_production_starter/core/error/failures.dart';
+import 'package:flutter_production_starter/data/datasource/local/auth_local_datasource.dart';
 import 'package:flutter_production_starter/data/datasource/remote/auth_remote_datasource.dart';
 import 'package:flutter_production_starter/data/model/auth_response_model.dart';
+import 'package:flutter_production_starter/data/model/token_pair_model.dart';
 import 'package:flutter_production_starter/data/repository/auth_repository_impl.dart';
 
+import 'helpers/in_memory_token_storage.dart';
+
 /// Datasource that always fails login with the supplied exception.
+/// Local datasource backed by memory; error mapping never touches it.
+class _MemoryLocalDataSource extends InMemoryTokenStorage
+    implements AuthLocalDataSource {}
+
 class _ThrowingDataSource implements AuthRemoteDataSource {
   final Object error;
   _ThrowingDataSource(this.error);
@@ -21,7 +29,7 @@ class _ThrowingDataSource implements AuthRemoteDataSource {
       throw error;
 
   @override
-  Future<AuthResponseModel> refresh(String refreshToken) =>
+  Future<TokenPairModel> refresh(String refreshToken) =>
       throw UnimplementedError();
 
   @override
@@ -70,6 +78,7 @@ void main() {
             code: NetworkErrorCode.timeout.errorCode,
           ),
         ),
+        localDataSource: _MemoryLocalDataSource(),
       );
 
       expect(
@@ -87,6 +96,7 @@ void main() {
     test('maps any other error to UnknownFailure', () async {
       final repo = AuthRepositoryImpl(
         remoteDataSource: _ThrowingDataSource(Exception('boom')),
+        localDataSource: _MemoryLocalDataSource(),
       );
 
       expect(repo.login('a@b.com', 'pw'), throwsA(isA<UnknownFailure>()));

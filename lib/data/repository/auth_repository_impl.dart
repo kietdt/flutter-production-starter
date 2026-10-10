@@ -5,16 +5,18 @@
 
 import '../../core/error/exceptions.dart';
 import '../../core/error/failures.dart';
-import '../../core/network/token_management.dart';
 import '../../domain/entity/user_entity.dart';
 import '../../domain/repository/auth_repository.dart';
+import '../datasource/local/auth_local_datasource.dart';
 import '../datasource/remote/auth_remote_datasource.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
+  final AuthLocalDataSource localDataSource;
 
   AuthRepositoryImpl({
     required this.remoteDataSource,
+    required this.localDataSource,
   });
 
   @override
@@ -24,7 +26,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       if (authResponse.accessToken.isNotEmpty &&
           authResponse.refreshToken.isNotEmpty) {
-        await TokenManagement.instance.saveTokens(
+        await localDataSource.saveTokens(
           accessToken: authResponse.accessToken,
           refreshToken: authResponse.refreshToken,
         );
@@ -41,7 +43,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    final refreshToken = TokenManagement.instance.getRefreshTokenSync();
+    final String? refreshToken = localDataSource.refreshToken;
     if (refreshToken != null && refreshToken.isNotEmpty) {
       try {
         await remoteDataSource.logout(refreshToken);
@@ -49,6 +51,12 @@ class AuthRepositoryImpl implements AuthRepository {
         // Ignore logout errors
       }
     }
-    await TokenManagement.instance.clearTokens();
+    await localDataSource.clearTokens();
+  }
+
+  @override
+  bool hasSession() {
+    final String? token = localDataSource.accessToken;
+    return token != null && token.isNotEmpty;
   }
 }

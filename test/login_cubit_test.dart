@@ -24,6 +24,9 @@ class _FakeRepository implements AuthRepository {
 
   @override
   Future<void> logout() async {}
+
+  @override
+  bool hasSession() => false;
 }
 
 class _MockRepository extends Mock implements AuthRepository {}

@@ -18,6 +18,7 @@ import 'package:flutter_production_starter/core/localization/locale_cubit.dart';
 import 'package:flutter_production_starter/core/theme/theme_cubit.dart';
 import 'package:flutter_production_starter/domain/entity/user_entity.dart';
 import 'package:flutter_production_starter/domain/repository/auth_repository.dart';
+import 'package:flutter_production_starter/domain/usecase/check_session_usecase.dart';
 import 'package:flutter_production_starter/domain/usecase/login_usecase.dart';
 import 'package:flutter_production_starter/domain/usecase/logout_usecase.dart';
 import 'package:flutter_production_starter/feature/login/login_page.dart';
@@ -26,6 +27,7 @@ class _MockAuthRepository extends Mock implements AuthRepository {}
 
 late AuthRepository repository;
 late AppAuthCubit authCubit;
+late SharedPrefsManager prefs;
 
 Future<void> _pumpLoginPage(WidgetTester tester) async {
   // LoginPage's AppBar hosts the shared Theme/Language toggle buttons, so those
@@ -34,10 +36,8 @@ Future<void> _pumpLoginPage(WidgetTester tester) async {
     MultiBlocProvider(
       providers: [
         BlocProvider.value(value: authCubit),
-        BlocProvider(
-            create: (_) => ThemeCubit(prefs: SharedPrefsManager.instance)),
-        BlocProvider(
-            create: (_) => LocaleCubit(prefs: SharedPrefsManager.instance)),
+        BlocProvider(create: (_) => ThemeCubit(prefs: prefs)),
+        BlocProvider(create: (_) => LocaleCubit(prefs: prefs)),
       ],
       child: const MaterialApp(home: LoginPage()),
     ),
@@ -47,12 +47,14 @@ Future<void> _pumpLoginPage(WidgetTester tester) async {
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await SharedPrefsManager.instance.init();
+    prefs = await SharedPrefsManager.create();
     repository = _MockAuthRepository();
     // LoginPage builds its LoginCubit from the service locator.
     sl.registerLazySingleton(() => LoginUseCase(repository: repository));
-    authCubit =
-        AppAuthCubit(logoutUseCase: LogoutUseCase(repository: repository));
+    authCubit = AppAuthCubit(
+      checkSessionUseCase: CheckSessionUseCase(repository: repository),
+      logoutUseCase: LogoutUseCase(repository: repository),
+    );
   });
 
   tearDown(() async {

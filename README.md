@@ -19,7 +19,7 @@
 - **BLoC / Cubit** — predictable state via `flutter_bloc`, with a unified `FeatureStatus` enum instead of one-off state classes.
 - **Global auth state** — `AppAuthCubit` drives authenticated/unauthenticated routing app-wide.
 - **Dependency Injection** — `get_it` service locator with lazy singletons.
-- **Local storage** — `SharedPrefsManager` singleton wrapper over `shared_preferences`.
+- **Local storage** — `SharedPrefsManager` wrapper over `shared_preferences`, created once in `initDI()` and injected (no static singletons — everything goes through `get_it` + constructors).
 - **Documented conventions** — enforced via [`AI_RULE.md`](AI_RULE.md) and `.cursor/rules/`.
 
 ---
@@ -72,13 +72,13 @@ The standout piece. When the access token expires, many in-flight requests can f
       │                       │                       │
       │  isRefreshing? NO     │  isRefreshing? YES    │  isRefreshing? YES
       ▼                       ▼                       ▼
- startRefreshToken()    await completer.future   await completer.future
- POST /auth/refresh           (parked)                 (parked)
+ refreshToken() starts   refreshToken() joins     refreshToken() joins
+ refresher → POST /auth/refresh  (parked)               (parked)
       │                       │                       │
       ▼                       │                       │
  saveTokens()  ◄── MUST save before completing        │
       │                       │                       │
- finishRefreshToken(newToken) │                       │
+ _finishRefreshToken(newToken)│                       │
       │  ──── completes ────► │  ──── completes ────► │
       ▼                       ▼                       ▼
  dio.fetch(retry)        dio.fetch(retry)        dio.fetch(retry)
@@ -93,6 +93,7 @@ Key guarantees:
 - **Deadlock-free** — the refresh call itself uses `requiresAuth: false` to bypass the interceptor.
 
 > Implementation: `lib/core/network/token_management.dart` + `lib/core/network/interceptors/auth_interceptor.dart`.
+> `TokenManagement` depends only on core abstractions — `TokenStorage` (implemented by `AuthLocalDataSource`) and a `TokenRefresher` callback that `initDI()` wires to `AuthRemoteDataSource.refresh` (parsed via `TokenPairModel`). That breaks the `NetworkClient → AuthInterceptor → TokenManagement → network` cycle and makes it unit-testable with fakes.
 
 ---
 
@@ -104,7 +105,7 @@ lib/
 │   ├── auth/                      # Global auth state (AppAuthCubit/State)
 │   ├── di/                        # get_it service locator (initDI)
 │   ├── error/                     # ServerException, Failure, NetworkErrorCode
-│   ├── local_storage/             # SharedPrefsManager singleton
+│   ├── local_storage/             # SharedPrefsManager (registered in get_it)
 │   ├── localization/              # Localization scaffolding
 │   ├── network/
 │   │   ├── interceptors/          # AuthInterceptor, LoggingInterceptor
@@ -178,7 +179,7 @@ Per-flavor behavior lives on `AppConfig`: `prod` turns off network logging
 
 ```bash
 flutter analyze   # static analysis — should report: No issues found!
-flutter test      # run the test suite (77 tests)
+flutter test      # run the test suite (94 tests)
 ```
 
 ### Release signing (Android)
@@ -236,7 +237,7 @@ Planned enhancements (tracked in `PLAN.md`):
 - [x] **Error handling** — map `Exception → Failure` so the UI never sees raw `e.toString()`
 - [x] **Form validation** — `formz` inputs for email/password
 - [x] **Localization** — manual i18n (English + Vietnamese), no codegen — abstract `AppLanguage`, read in widgets via `context.l10n` (rebuilds on language switch)
-- [x] **Tests** — `bloc_test` + `mocktail` covering cubits, usecases, refresh concurrency, and widgets (77 tests)
+- [x] **Tests** — `bloc_test` + `mocktail` covering cubits, usecases, refresh concurrency, and widgets (94 tests)
 - [x] **Flavors** — dev / staging / prod entry points + per-flavor config (`AppConfig`)
 - [x] **CI/CD** — GitHub Actions (analyze → test on push/PR; debug + release APK build on manual run)
 - [x] **Release signing** — Android release key via `key.properties` + R8 shrinking

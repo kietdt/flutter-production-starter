@@ -1,46 +1,46 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Thin wrapper over [SharedPreferences]. Created once by `initDI()` and
+/// injected where needed — there is no static instance.
 class SharedPrefsManager {
-  static final SharedPrefsManager _instance = SharedPrefsManager._internal();
-  static SharedPrefsManager get instance => _instance;
+  final SharedPreferences _prefs;
 
-  SharedPrefsManager._internal();
+  SharedPrefsManager({required SharedPreferences prefs}) : _prefs = prefs;
 
-  SharedPreferences? _prefs;
-
-  Future<void> init() async {
-    _prefs = await SharedPreferences.getInstance();
+  /// Loads the platform preferences. Await before registering in DI.
+  static Future<SharedPrefsManager> create() async {
+    return SharedPrefsManager(prefs: await SharedPreferences.getInstance());
   }
 
-  Future<bool> setString(String key, String value) async {
-    return await _prefs?.setString(key, value) ?? false;
+  Future<bool> setString(String key, String value) {
+    return _prefs.setString(key, value);
   }
 
   String? getString(String key) {
-    return _prefs?.getString(key);
+    return _prefs.getString(key);
   }
 
-  Future<bool> setInt(String key, int value) async {
-    return await _prefs?.setInt(key, value) ?? false;
+  Future<bool> setInt(String key, int value) {
+    return _prefs.setInt(key, value);
   }
 
   int? getInt(String key) {
-    return _prefs?.getInt(key);
+    return _prefs.getInt(key);
   }
 
-  Future<bool> setBool(String key, bool value) async {
-    return await _prefs?.setBool(key, value) ?? false;
+  Future<bool> setBool(String key, bool value) {
+    return _prefs.setBool(key, value);
   }
 
   bool? getBool(String key) {
-    return _prefs?.getBool(key);
+    return _prefs.getBool(key);
   }
 
-  Future<bool> remove(String key) async {
-    return await _prefs?.remove(key) ?? false;
+  Future<bool> remove(String key) {
+    return _prefs.remove(key);
   }
 
-  Future<bool> clear() async {
-    return await _prefs?.clear() ?? false;
+  Future<bool> clear() {
+    return _prefs.clear();
   }
 }

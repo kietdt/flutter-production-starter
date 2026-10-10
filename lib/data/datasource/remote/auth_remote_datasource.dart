@@ -3,10 +3,11 @@
 
 import '../../../core/network/network_client.dart';
 import '../../model/auth_response_model.dart';
+import '../../model/token_pair_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<AuthResponseModel> login(String email, String password);
-  Future<AuthResponseModel> refresh(String refreshToken);
+  Future<TokenPairModel> refresh(String refreshToken);
   Future<void> logout(String refreshToken);
 }
 
@@ -31,15 +32,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<AuthResponseModel> refresh(String refreshToken) async {
+  Future<TokenPairModel> refresh(String refreshToken) async {
     final response = await networkClient.post<Map<String, dynamic>>(
       '/auth/refresh',
       data: {
         'refreshToken': refreshToken,
       },
-      requiresAuth: false,
+      requiresAuth: false, // must bypass the auth flow (see AuthInterceptor)
     );
-    return AuthResponseModel.fromJson(response);
+    return TokenPairModel.fromJson(response);
   }
 
   @override

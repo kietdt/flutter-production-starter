@@ -14,16 +14,14 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flutter_production_starter/core/di/di.dart';
 import 'package:flutter_production_starter/core/error/exceptions.dart';
-import 'package:flutter_production_starter/core/local_storage/shared_prefs_manager.dart';
 import 'package:flutter_production_starter/core/network/network_client.dart';
 import 'package:flutter_production_starter/core/network/token_management.dart';
+import 'package:flutter_production_starter/data/datasource/remote/auth_remote_datasource.dart';
 
-const _accessKey = 'access_token';
-const _refreshKey = 'refresh_token';
+import '../../helpers/in_memory_token_storage.dart';
+
 const _refreshPath = '/auth/refresh';
 
 /// Fails fast instead of hanging the test runner when a deadlock regresses.
@@ -64,24 +62,32 @@ class _FakeAdapter implements HttpClientAdapter {
 
 void main() {
   late NetworkClient client;
+  late InMemoryTokenStorage storage;
+  late TokenManagement tokens;
   late int unauthorizedCalls;
 
-  /// Seeds storage, builds a real [NetworkClient] (real interceptors) backed by
-  /// [adapter], and registers it where TokenManagement.refreshToken looks.
+  /// Wires the real graph by hand, as `initDI()` does: seeded storage →
+  /// TokenManagement (refreshing through the real AuthRemoteDataSource) →
+  /// NetworkClient with real interceptors, backed by [adapter].
   Future<void> setUpClient(_FakeAdapter adapter) async {
-    SharedPreferences.setMockInitialValues({
-      _accessKey: 'old-access',
-      _refreshKey: 'old-refresh',
-    });
-    await SharedPrefsManager.instance.init();
-
+    storage = InMemoryTokenStorage(
+      accessToken: 'old-access',
+      refreshToken: 'old-refresh',
+    );
     unauthorizedCalls = 0;
+    tokens = TokenManagement(
+      storage: storage,
+      refresher: (refreshToken) async =>
+          (await AuthRemoteDataSourceImpl(networkClient: client)
+                  .refresh(refreshToken))
+              .toEntity(),
+    );
     client = NetworkClient(
       baseUrl: 'https://api.test',
+      tokenManagement: tokens,
       onUnauthorized: () => unauthorizedCalls++,
     );
     client.dio.httpClientAdapter = adapter;
-    sl.registerSingleton<NetworkClient>(client);
   }
 
   /// Holds each protected 401 until [count] of them have arrived, so their
@@ -95,11 +101,6 @@ void main() {
       return _json(401, {'message': 'token expired'});
     };
   }
-
-  tearDown(() async {
-    await TokenManagement.instance.clearTokens();
-    await sl.reset();
-  });
 
   group('requiresAuth:false requests (#1)', () {
     late _FakeAdapter adapter;
@@ -122,9 +123,9 @@ void main() {
 
       expect(adapter.paths, ['/me', _refreshPath]);
       expect(unauthorizedCalls, 1);
-      expect(TokenManagement.instance.getAccessTokenSync(), isNull);
-      expect(TokenManagement.instance.getRefreshTokenSync(), isNull);
-      expect(TokenManagement.instance.isRefreshing, isFalse);
+      expect(storage.accessToken, isNull);
+      expect(storage.refreshToken, isNull);
+      expect(tokens.isRefreshing, isFalse);
     });
 
     test(
@@ -143,7 +144,34 @@ void main() {
 
       expect(adapter.paths, ['/auth/login']);
       expect(unauthorizedCalls, 0);
-      expect(TokenManagement.instance.getRefreshTokenSync(), 'old-refresh');
+      expect(storage.refreshToken, 'old-refresh');
+    });
+  });
+
+  group('refresh response (#12)', () {
+    test(
+        'a refresh response without an access token ends the session instead '
+        'of retrying with an empty token', () async {
+      final adapter = _FakeAdapter(
+        respond: (options) async {
+          if (options.path == _refreshPath) {
+            return _json(200, {'refreshToken': 'new-refresh'});
+          }
+          return _json(401, {'message': 'token expired'});
+        },
+      );
+      await setUpClient(adapter);
+
+      await expectLater(
+        client.get<dynamic>('/me').timeout(_hangTimeout),
+        throwsA(isA<ServerException>()),
+      );
+
+      expect(adapter.paths, ['/me', _refreshPath]);
+      expect(unauthorizedCalls, 1);
+      expect(storage.accessToken, isNull);
+      expect(storage.refreshToken, isNull);
+      expect(tokens.isRefreshing, isFalse);
     });
   });
 
@@ -176,9 +204,9 @@ void main() {
       expect(results.map((r) => r['path']), ['/a', '/b', '/c']);
       expect(adapter.callsTo(_refreshPath), 1);
       expect(unauthorizedCalls, 0);
-      expect(TokenManagement.instance.getAccessTokenSync(), 'new-access');
-      expect(TokenManagement.instance.getRefreshTokenSync(), 'new-refresh');
-      expect(TokenManagement.instance.isRefreshing, isFalse);
+      expect(storage.accessToken, 'new-access');
+      expect(storage.refreshToken, 'new-refresh');
+      expect(tokens.isRefreshing, isFalse);
     });
 
     test('a failed shared refresh fails every request but logs out only once',
@@ -204,8 +232,8 @@ void main() {
       expect(outcomes, everyElement(isA<ServerException>()));
       expect(adapter.callsTo(_refreshPath), 1);
       expect(unauthorizedCalls, 1);
-      expect(TokenManagement.instance.getAccessTokenSync(), isNull);
-      expect(TokenManagement.instance.isRefreshing, isFalse);
+      expect(storage.accessToken, isNull);
+      expect(tokens.isRefreshing, isFalse);
     });
 
     test(
@@ -217,7 +245,7 @@ void main() {
             return _json(200, {'path': options.path});
           }
           // Another request rotated the tokens while this one was in flight.
-          await TokenManagement.instance.saveTokens(
+          await storage.saveTokens(
             accessToken: 'new-access',
             refreshToken: 'new-refresh',
           );

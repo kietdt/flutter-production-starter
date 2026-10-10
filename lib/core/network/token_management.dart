@@ -1,16 +1,20 @@
 import 'dart:async';
-import '../local_storage/shared_prefs_manager.dart';
-import '../di/di.dart';
-import 'network_client.dart';
+
+import 'token_pair.dart';
+import 'token_storage.dart';
+
+/// Exchanges a refresh token for a new [TokenPair] (the `/auth/refresh` call).
+/// Wired in DI to `AuthRemoteDataSource.refresh`, keeping core free of data.
+typedef TokenRefresher = Future<TokenPair> Function(String refreshToken);
 
 class TokenManagement {
-  static final TokenManagement _instance = TokenManagement._internal();
-  static TokenManagement get instance => _instance;
+  final TokenStorage storage;
+  final TokenRefresher refresher;
 
-  TokenManagement._internal();
-
-  static const String _accessTokenKey = 'access_token';
-  static const String _refreshTokenKey = 'refresh_token';
+  TokenManagement({
+    required this.storage,
+    required this.refresher,
+  });
 
   Completer<String?>? _refreshTokenCompleter;
 
@@ -22,29 +26,14 @@ class TokenManagement {
     if (!force && _refreshTokenCompleter != null) {
       return _refreshTokenCompleter!.future;
     }
-    return SharedPrefsManager.instance.getString(_accessTokenKey);
+    return storage.accessToken;
   }
 
-  String? getAccessTokenSync() {
-    return SharedPrefsManager.instance.getString(_accessTokenKey);
-  }
+  String? getAccessTokenSync() => storage.accessToken;
 
-  String? getRefreshTokenSync() {
-    return SharedPrefsManager.instance.getString(_refreshTokenKey);
-  }
+  String? getRefreshTokenSync() => storage.refreshToken;
 
-  Future<void> saveTokens({
-    required String accessToken,
-    required String refreshToken,
-  }) async {
-    await SharedPrefsManager.instance.setString(_accessTokenKey, accessToken);
-    await SharedPrefsManager.instance.setString(_refreshTokenKey, refreshToken);
-  }
-
-  Future<void> clearTokens() async {
-    await SharedPrefsManager.instance.remove(_accessTokenKey);
-    await SharedPrefsManager.instance.remove(_refreshTokenKey);
-  }
+  Future<void> clearTokens() => storage.clearTokens();
 
   /// Mark the end of a refresh token process, successfully or not.
   void _finishRefreshToken(String? newAccessToken) {
@@ -67,37 +56,29 @@ class TokenManagement {
     // Set synchronously (before any await) so concurrent callers see it.
     _refreshTokenCompleter = Completer<String?>();
 
-    final refreshToken = getRefreshTokenSync();
+    final String? refreshToken = getRefreshTokenSync();
     if (refreshToken == null || refreshToken.isEmpty) {
       _finishRefreshToken(null);
       return null;
     }
 
     try {
-      final networkClient = sl<NetworkClient>();
-      final response = await networkClient.post<Map<String, dynamic>>(
-        '/auth/refresh',
-        data: {'refreshToken': refreshToken},
-        requiresAuth: false, // IMPORTANT: Bypass auth to prevent deadlock
-      );
-
-      final data = response;
-      final newAccessToken = data['accessToken'] as String? ?? '';
-      final newRefreshToken = data['refreshToken'] as String? ?? '';
-
-      if (newAccessToken.isEmpty) {
-        throw Exception('Refresh token failed: No access token returned');
+      final TokenPair tokens = await refresher(refreshToken);
+      if (tokens.accessToken.isEmpty) {
+        throw StateError('Refresh token failed: no access token returned');
       }
 
       // MUST save tokens BEFORE finishing refresh, otherwise concurrent
-      // requests might read the old token from SharedPreferences.
-      await saveTokens(
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
+      // requests might read the old token from storage. A server that does
+      // not rotate refresh tokens omits it — keep the current one then.
+      await storage.saveTokens(
+        accessToken: tokens.accessToken,
+        refreshToken:
+            tokens.refreshToken.isNotEmpty ? tokens.refreshToken : refreshToken,
       );
 
-      _finishRefreshToken(newAccessToken);
-      return newAccessToken;
+      _finishRefreshToken(tokens.accessToken);
+      return tokens.accessToken;
     } catch (e) {
       _finishRefreshToken(null);
       rethrow;

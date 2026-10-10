@@ -17,8 +17,7 @@ import 'package:flutter_production_starter/main.dart';
 /// Boots the real app signed in, so it lands on HomePage.
 Future<void> _bootHome(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({'access_token': 'valid-token'});
-  await SharedPrefsManager.instance.init();
-  initDI();
+  await initDI();
   await tester.pumpWidget(const MyApp());
   await tester.pumpAndSettle();
 }
@@ -27,9 +26,9 @@ Future<void> _bootHome(WidgetTester tester) async {
 /// The gallery's ThemeToggleButton needs a ThemeCubit above the Navigator.
 Future<Widget> _openDevToolsButton() async {
   SharedPreferences.setMockInitialValues({});
-  await SharedPrefsManager.instance.init();
+  final SharedPrefsManager prefs = await SharedPrefsManager.create();
   return BlocProvider(
-    create: (_) => ThemeCubit(prefs: SharedPrefsManager.instance),
+    create: (_) => ThemeCubit(prefs: prefs),
     child: MaterialApp(
       home: Builder(
         builder: (context) => Scaffold(

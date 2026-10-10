@@ -8,4 +8,7 @@ import '../entity/user_entity.dart';
 abstract class AuthRepository {
   Future<UserEntity> login(String email, String password);
   Future<void> logout();
+
+  /// Whether a session (access token) is stored locally.
+  bool hasSession();
 }

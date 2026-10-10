@@ -7,7 +7,6 @@ import 'core/config/app_config.dart';
 import 'core/di/di.dart';
 import 'core/error/app_bloc_observer.dart';
 import 'core/error/global_error_handler.dart';
-import 'core/local_storage/shared_prefs_manager.dart';
 import 'core/localization/app_language.dart';
 import 'core/localization/app_language_context.dart';
 import 'core/localization/locale_cubit.dart';
@@ -34,8 +33,7 @@ Future<void> bootstrap(Flavor flavor) async {
 }
 
 Future<void> initApp() async {
-  await SharedPrefsManager.instance.init();
-  initDI();
+  await initDI();
 }
 
 class MyApp extends StatefulWidget {

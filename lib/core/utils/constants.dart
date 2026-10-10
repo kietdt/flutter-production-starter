@@ -17,4 +17,9 @@ class StorageKeys {
 
   /// Persisted locale code (e.g. 'en', 'vi') selected by the user.
   static const String locale = 'locale';
+
+  /// Session tokens. Values must not change: existing installs keep their
+  /// session across app updates.
+  static const String accessToken = 'access_token';
+  static const String refreshToken = 'refresh_token';
 }

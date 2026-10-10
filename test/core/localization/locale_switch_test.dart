@@ -6,13 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_production_starter/core/di/di.dart';
-import 'package:flutter_production_starter/core/local_storage/shared_prefs_manager.dart';
 import 'package:flutter_production_starter/main.dart';
 
 Future<void> _boot(WidgetTester tester, Map<String, Object> prefs) async {
   SharedPreferences.setMockInitialValues(prefs);
-  await SharedPrefsManager.instance.init();
-  initDI();
+  await initDI();
   await tester.pumpWidget(const MyApp());
   await tester.pumpAndSettle();
 }

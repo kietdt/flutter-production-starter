@@ -16,8 +16,9 @@ Future<UserEntity> login(String email, String password) async {
   final authResponse = AuthResponseModel.fromJson(response);
 
   if (authResponse.accessToken.isNotEmpty) {
-    await TokenManagement.instance.saveTokens(
+    await localDataSource.saveTokens(
       accessToken: authResponse.accessToken,
+      refreshToken: authResponse.refreshToken,
     );
   }
 
@@ -36,8 +37,9 @@ Future<UserEntity> login(String email, String password) async {
   final userMap = response['user'] as Map<String, dynamic>?;
 
   if (accessToken != null) {
-    await TokenManagement.instance.saveTokens(
+    await localDataSource.saveTokens(
       accessToken: accessToken,
+      refreshToken: response['refreshToken'] as String? ?? '',
     );
   }
 
