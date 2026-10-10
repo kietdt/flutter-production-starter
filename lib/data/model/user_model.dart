@@ -1,11 +1,8 @@
-// Data Model Module
-// Responsibility: Data transfer objects. Contains JSON serialization/deserialization.
-//
 // Independent of domain entities; exposes toEntity() to bridge the data and
 // domain layers (see .cursor/rules/model-entity-separation.mdc).
 
-import '../../core/utils/map_ext.dart';
-import '../../domain/entity/user_entity.dart';
+import 'package:flutter_production_starter/core/utils/map_ext.dart';
+import 'package:flutter_production_starter/domain/entity/user_entity.dart';
 
 class UserModel {
   final String id;

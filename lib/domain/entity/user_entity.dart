@@ -1,7 +1,6 @@
-// Domain Entity Module
-// Responsibility: Core business logic objects. Independent of any other layer.
+import 'package:equatable/equatable.dart';
 
-class UserEntity {
+class UserEntity extends Equatable {
   final String id;
   final String email;
   final String userName;
@@ -11,4 +10,10 @@ class UserEntity {
     required this.email,
     required this.userName,
   });
+
+  /// Name to show in the UI; falls back to the email when no user name is set.
+  String get displayName => userName.isNotEmpty ? userName : email;
+
+  @override
+  List<Object?> get props => [id, email, userName];
 }

@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Custom Logging
 
+> **Enforced by:** lint `avoid_print` + `tool/check_architecture.sh` (`dart:developer` outside `AppLogger`)
+
 **Rule:** Never use `print()` or `dart:developer`'s `log()` directly in feature or domain code. Always use the custom `AppLogger` utility defined in `lib/core/utils/app_logger.dart` to maintain a unified logging interface across the application.
 
 ### ✅ Good Example

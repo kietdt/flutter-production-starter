@@ -5,13 +5,18 @@ alwaysApply: false
 ---
 # Cubit and State Files Coupling
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** Use `part` and `part of` to link Cubit and State files together instead of regular imports. The Cubit file should declare `part 'feature_state.dart';` and house all the necessary imports, while the State file should declare `part of 'feature_cubit.dart';` and should not have any imports of its own.
+
+**State equality:** State classes extend `Equatable` and list every field in `props`, so emitting a state equal to the current one is skipped (no redundant rebuilds) and tests compare states by value. Import `package:equatable/equatable.dart` in the Cubit file — the State file has no imports.
 
 ### ✅ Good Example
 ```dart
 // In feature_cubit.dart
+import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/entity/user_entity.dart';
+import 'package:flutter_production_starter/domain/entity/user_entity.dart';
 
 part 'feature_state.dart';
 
@@ -20,7 +25,12 @@ class FeatureCubit extends Cubit<FeatureState> { ... }
 // In feature_state.dart
 part of 'feature_cubit.dart';
 
-class FeatureState { ... }
+class FeatureState extends Equatable {
+  final UserEntity? user;
+  ...
+  @override
+  List<Object?> get props => [user];
+}
 ```
 
 ### ❌ Bad Example

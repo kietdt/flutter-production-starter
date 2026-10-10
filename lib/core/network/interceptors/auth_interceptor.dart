@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import '../../utils/app_logger.dart';
-import '../request_extra_keys.dart';
-import '../token_management.dart';
+import 'package:flutter_production_starter/core/network/request_extra_keys.dart';
+import 'package:flutter_production_starter/core/network/token_management.dart';
+import 'package:flutter_production_starter/core/utils/app_logger.dart';
 
 class AuthInterceptor extends Interceptor {
   final Dio dio;
@@ -122,7 +122,7 @@ class AuthInterceptor extends Interceptor {
       // Use the existing dio instance. The onRequest interceptor will automatically
       // pick up the new token from TokenManagement, so we don't need to manually
       // set the Authorization header here.
-      final response = await dio.fetch(options);
+      final response = await dio.fetch<dynamic>(options);
       return handler.resolve(response);
     } catch (e) {
       if (e is DioException) {

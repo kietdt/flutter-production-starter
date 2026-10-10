@@ -112,3 +112,5 @@ lint/tmp/
 
 
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Dart,Android,ios
+# Test coverage (flutter test --coverage)
+/coverage/

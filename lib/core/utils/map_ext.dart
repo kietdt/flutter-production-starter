@@ -1,6 +1,6 @@
 import 'dart:core';
 
-import 'parse_utils.dart';
+import 'package:flutter_production_starter/core/utils/parse_utils.dart';
 
 extension MapParser on Map<dynamic, dynamic> {
   double parseDouble(String key, {double defaultValue = 0.0}) {
@@ -11,7 +11,7 @@ extension MapParser on Map<dynamic, dynamic> {
     return Parse.asDoubleOrNull(this[key]);
   }
 
-  String parseString(String key, {String defaultValue = ""}) {
+  String parseString(String key, {String defaultValue = ''}) {
     return Parse.asString(this[key], defaultValue: defaultValue);
   }
 

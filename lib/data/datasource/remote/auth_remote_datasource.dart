@@ -1,9 +1,6 @@
-// Data Remote Datasource Module
-// Responsibility: Communicate with external APIs/services.
-
-import '../../../core/network/network_client.dart';
-import '../../model/auth_response_model.dart';
-import '../../model/token_pair_model.dart';
+import 'package:flutter_production_starter/core/network/network_client.dart';
+import 'package:flutter_production_starter/data/model/auth_response_model.dart';
+import 'package:flutter_production_starter/data/model/token_pair_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<AuthResponseModel> login(String email, String password);

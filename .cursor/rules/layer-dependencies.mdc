@@ -1,0 +1,43 @@
+---
+description: Each layer (core/domain/data/feature/app) may import only the layers allowed by the dependency table; enforced by tool/check_architecture.sh
+globs: lib/**/*.dart
+alwaysApply: false
+---
+# Layer Dependencies
+
+> **Enforced by:** `tool/check_architecture.sh` (CI) + lint `always_use_package_imports`
+
+**Rule:** Imports must follow the dependency table below. Always use `package:flutter_production_starter/...` imports (lint `always_use_package_imports`) so boundaries are greppable. `tool/check_architecture.sh` enforces this in CI.
+
+| Layer | May import |
+|---|---|
+| `core` | `core` + external packages only |
+| `domain` | `domain`, `core/error`, `core/utils` |
+| `data` | `data`, `domain`, `core` |
+| `feature/<x>` | itself, `domain`, `core`, `app/coordinator`, `app/auth`; `app/di` **only** from `*_page.dart` (to resolve the screen's Cubit with `sl()`); `feature/<x>/di/` (the feature's own composition) may also import `data` |
+| `app` | everything — it is the composition layer (`bootstrap`, `MyApp`, DI, `AuthGate`, `Coordinator`, `AppAuthCubit`) |
+| `main*.dart` | `app/bootstrap.dart`, `core/config` |
+
+Forbidden: a feature importing another feature (navigate through `Coordinator`), a feature importing `data` outside `feature/<x>/di/`, anything in `core` importing a higher layer.
+
+The `app/coordinator ↔ feature/<x>/<x>_page.dart` cycle is intentional: the Coordinator must know a page to push it, and pages call the Coordinator.
+
+### ❌ Bad Example
+```dart
+// lib/core/router/app_router.dart — core depending on features
+import 'package:flutter_production_starter/feature/home/home.dart';
+
+// lib/feature/home/home.dart — feature reaching into data / another feature
+import 'package:flutter_production_starter/data/model/user_model.dart';
+import 'package:flutter_production_starter/feature/login/login_page.dart';
+```
+
+### ✅ Good Example
+```dart
+// lib/app/router/auth_gate.dart — composition layer wires features together
+import 'package:flutter_production_starter/feature/home/home.dart';
+
+// lib/feature/home/home.dart — depends on domain + app entry points only
+import 'package:flutter_production_starter/domain/entity/user_entity.dart';
+import 'package:flutter_production_starter/app/coordinator/coordinator.dart';
+```

@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Prefer Private Build Methods for Tiny UI Pieces
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** When a small UI component serves only the current widget and is not reused anywhere else, prefer a private `_buildX(...)` method returning a `Widget` inside the parent class rather than extracting a separate `StatelessWidget`. Extracting a class for something used once adds redundant internal classes and fragments closely-related build logic.
 
 Note: this concerns tiny presentational pieces. Non-widget helper classes (`CustomClipper`, `CustomPainter`, `Delegate`) still follow the one-class-per-file rule.

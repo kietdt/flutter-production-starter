@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Granular BlocBuilders
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** When a large widget depends on several different fields of the state, do not wrap the whole UI in a single `BlocBuilder` with a meaningless `buildWhen` (e.g. `previous != current`). That rebuilds the entire screen on any change. Split the UI into smaller widgets, each wrapped in its own `BlocBuilder` with a `buildWhen` that compares only the field it cares about.
 
 ### ❌ Bad Example

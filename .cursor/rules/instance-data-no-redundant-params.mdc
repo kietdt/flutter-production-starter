@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Do Not Pass Instance Data Back Into Its Own Methods
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** When a method on a class/model formats or computes something from the object's own fields, use the instance variables directly (ideally as a `get` property) instead of accepting them as parameters. If the data already belongs to the instance, the caller should not have to pass it back.
 
 ### ❌ Bad Example

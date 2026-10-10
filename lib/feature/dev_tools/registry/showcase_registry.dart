@@ -4,14 +4,14 @@
 
 import 'package:flutter/material.dart';
 
-import '../model/dev_showcase.dart';
-import '../showcase/buttons_showcase_page.dart';
-import '../showcase/cards_showcase_page.dart';
-import '../showcase/color_showcase_page.dart';
-import '../showcase/feedback_showcase_page.dart';
-import '../showcase/inputs_showcase_page.dart';
-import '../showcase/scaffold_showcase_page.dart';
-import '../showcase/typography_showcase_page.dart';
+import 'package:flutter_production_starter/feature/dev_tools/model/dev_showcase.dart';
+import 'package:flutter_production_starter/feature/dev_tools/showcase/buttons_showcase_page.dart';
+import 'package:flutter_production_starter/feature/dev_tools/showcase/cards_showcase_page.dart';
+import 'package:flutter_production_starter/feature/dev_tools/showcase/color_showcase_page.dart';
+import 'package:flutter_production_starter/feature/dev_tools/showcase/feedback_showcase_page.dart';
+import 'package:flutter_production_starter/feature/dev_tools/showcase/inputs_showcase_page.dart';
+import 'package:flutter_production_starter/feature/dev_tools/showcase/scaffold_showcase_page.dart';
+import 'package:flutter_production_starter/feature/dev_tools/showcase/typography_showcase_page.dart';
 
 const List<DevShowcase> kShowcases = [
   DevShowcase(

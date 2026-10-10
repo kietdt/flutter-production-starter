@@ -1,0 +1,47 @@
+---
+description: Errors flow DioException → ServerException → sealed Failure → context.l10n text; no user-facing strings in core/error, business errors via ServerFailure.serverCode
+globs: lib/**/*.dart
+alwaysApply: false
+---
+# Error Model
+
+> **Enforced by:** lint `only_throw_errors` — the rest is reviewed
+
+**Rule:** Errors travel through three typed stages and only become text in the widget:
+
+1. `NetworkClient` maps every `DioException` to a `ServerException` (`type: NetworkErrorCode`, `statusCode`, `serverCode`, `serverMessage`, `cause`) with an exhaustive `switch` — no `default`.
+2. Repositories catch it and throw a `Failure` (`e.toFailure(stackTrace: st)`); any other error becomes `UnknownFailure(cause: e, stackTrace: st)` — never swallow the cause.
+3. Cubits store the `Failure` in state (`Nullable<Failure?>`, cleared on `loading`); widgets show `failure.message(context.l10n)` (`core/localization/failure_message.dart`).
+
+- `Failure` is `sealed` and `implements Exception` (lint `only_throw_errors`): `NetworkFailure(reason)`, `UnauthorizedFailure` (401), `ServerFailure(statusCode, serverCode, serverMessage)`, `CancelledFailure`, `UnknownFailure(cause, stackTrace)`.
+- `core/error/` holds **no user-facing text**. Add strings to `AppLanguage` and map them in `FailureMessage`.
+- Branch on a failure with a `switch` over its type, not `is` checks scattered around.
+- **Business errors** (`OTP_EXPIRED`, …) are **not** new `Failure` subtypes — read them from `ServerFailure.serverCode` with a project enum.
+- The backend's error-body format is parsed in one place: `NetworkClient._parseErrorBody`.
+- `serverMessage` is shown only when `AppConfig.useServerErrorMessage` is on.
+
+### ❌ Bad Example
+```dart
+class ServerFailure extends Failure {
+  const ServerFailure({required super.message}); // English text in core
+}
+
+} catch (_) {
+  throw const UnknownFailure(); // root cause lost
+}
+
+emit(state.copyWith(errorMessage: Nullable(e.message))); // never localized
+Text(state.errorMessage ?? 'Login failed');
+```
+
+### ✅ Good Example
+```dart
+} on ServerException catch (e, st) {
+  throw e.toFailure(stackTrace: st);
+} catch (e, st) {
+  throw UnknownFailure(cause: e, stackTrace: st);
+}
+
+emit(state.copyWith(status: FeatureStatus.failure, failure: Nullable(e)));
+Text(state.failure!.message(context.l10n));
+```

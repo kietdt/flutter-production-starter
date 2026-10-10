@@ -1,80 +1,47 @@
 // Core Error Module
 // Responsibility: Define data-level exceptions.
 //
-// These are thrown by datasources and caught by repositories to be converted into Failures.
+// Thrown by NetworkClient/datasources and caught by repositories, which map
+// them to a `Failure` (see failures.dart). Holds no user-facing text: the UI
+// maps failures to strings through `context.l10n`.
 
-class ServerException implements Exception {
-  final String message;
-  final String? code;
-  final Map<String, dynamic>? error;
-
-  ServerException({
-    this.message = 'Server Exception',
-    this.code,
-    this.error,
-  });
-}
-
+/// What went wrong at the transport level. One value per `DioExceptionType`
+/// family, so `NetworkClient._mapException` stays an exhaustive switch.
 enum NetworkErrorCode {
   timeout,
+  connectionError,
+  badCertificate,
   badResponse,
   cancelled,
-  connectionError,
   unknown,
-  unexpectedError;
+}
 
-  String get errorCode {
-    switch (this) {
-      case NetworkErrorCode.timeout:
-        return 'timeout';
-      case NetworkErrorCode.badResponse:
-        return 'bad_response';
-      case NetworkErrorCode.cancelled:
-        return 'cancelled';
-      case NetworkErrorCode.connectionError:
-        return 'connection_error';
-      case NetworkErrorCode.unknown:
-        return 'unknown';
-      case NetworkErrorCode.unexpectedError:
-        return 'unexpected_error';
-    }
-  }
+class ServerException implements Exception {
+  final NetworkErrorCode type;
 
-  /// User-friendly message shown in the UI. Never exposes status codes,
-  /// stack traces or other technical detail.
-  String get message {
-    switch (this) {
-      case NetworkErrorCode.timeout:
-        return 'The connection timed out. Please try again.';
-      case NetworkErrorCode.badResponse:
-        return 'Something went wrong. Please try again.';
-      case NetworkErrorCode.cancelled:
-        return 'The request was cancelled.';
-      case NetworkErrorCode.connectionError:
-        return 'No internet connection. Please check your network and try again.';
-      case NetworkErrorCode.unknown:
-      case NetworkErrorCode.unexpectedError:
-        return 'An unexpected error occurred. Please try again.';
-    }
-  }
+  /// HTTP status code; only set for [NetworkErrorCode.badResponse].
+  final int? statusCode;
 
-  /// Resolves the stored [errorCode] string back to a [NetworkErrorCode],
-  /// defaulting to [unknown] for null/unrecognized values.
-  static NetworkErrorCode fromCode(String? code) {
-    switch (code) {
-      case 'timeout':
-        return NetworkErrorCode.timeout;
-      case 'bad_response':
-        return NetworkErrorCode.badResponse;
-      case 'cancelled':
-        return NetworkErrorCode.cancelled;
-      case 'connection_error':
-        return NetworkErrorCode.connectionError;
-      case 'unexpected_error':
-        return NetworkErrorCode.unexpectedError;
-      case 'unknown':
-      default:
-        return NetworkErrorCode.unknown;
-    }
-  }
+  /// Business error code from the error body (e.g. `'OTP_EXPIRED'`).
+  final String? serverCode;
+
+  /// Message from the error body. Logged; shown to users only when
+  /// `AppConfig.useServerErrorMessage` is on.
+  final String? serverMessage;
+
+  /// The original error, kept for logging / crash reporting.
+  final Object? cause;
+
+  const ServerException({
+    required this.type,
+    this.statusCode,
+    this.serverCode,
+    this.serverMessage,
+    this.cause,
+  });
+
+  @override
+  String toString() => 'ServerException(type: ${type.name}, '
+      'statusCode: $statusCode, serverCode: $serverCode, '
+      'serverMessage: $serverMessage, cause: $cause)';
 }

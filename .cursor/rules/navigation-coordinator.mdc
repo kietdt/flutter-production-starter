@@ -5,9 +5,11 @@ alwaysApply: false
 ---
 # Navigation via Coordinator
 
+> **Enforced by:** `tool/check_architecture.sh` (`Navigator.`/`MaterialPageRoute` outside `app/coordinator/`)
+
 **Rule:** Screen navigation is declared in **one place** —
-`lib/core/coordinator/coordinator.dart`. `Navigator.` and `MaterialPageRoute`
-may appear **only** inside `lib/core/coordinator/`. Features, pages and widgets
+`lib/app/coordinator/coordinator.dart`. `Navigator.` and `MaterialPageRoute`
+may appear **only** inside `lib/app/coordinator/`. Features, pages and widgets
 must express intent by calling a `Coordinator` method, never by constructing
 routes or calling `Navigator` directly.
 

@@ -3,11 +3,10 @@
 // the selection controls. Stateful because the controls hold local UI state.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_production_starter/core/theme/app_colors.dart';
+import 'package:flutter_production_starter/core/theme/theme_toggle_button.dart';
+import 'package:flutter_production_starter/feature/dev_tools/widget/showcase_section.dart';
 import 'package:gap/gap.dart';
-
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/theme_toggle_button.dart';
-import '../widget/showcase_section.dart';
 
 class InputsShowcasePage extends StatefulWidget {
   const InputsShowcasePage({super.key});

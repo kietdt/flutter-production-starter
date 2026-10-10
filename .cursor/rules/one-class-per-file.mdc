@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # One Top-level Class Per File
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** Do not put multiple top-level classes in one file. Non-widget helper classes such as `CustomClipper`, `CustomPainter`, `Delegate`, or plain helpers must live in their **own file** rather than being appended below the widget that uses them. This keeps files small, searchable, reusable and testable.
 
 Not in conflict with related rules: tiny presentational pieces may stay as private `_build` methods; a Cubit's `State` is split via `part`/`part of`; an enum tied to a State may stay in the state file.
@@ -28,3 +30,6 @@ class OngoingTicketItem extends StatelessWidget { /* uses TicketStubClipper */ }
 
 ### ⚠️ Exception
 If the helper serves **only one** widget and is not reused, it may stay `private` (name starting with `_`) in the **same file** as that widget. Only extract it to its own public file once it is reused elsewhere.
+
+### ⚠️ Exception — sealed hierarchies
+A `sealed` class and all of its subtypes must be declared in the same library, so they share one file (e.g. `Failure` and its subtypes in `lib/core/error/failures.dart`). Keep such files to the hierarchy itself.

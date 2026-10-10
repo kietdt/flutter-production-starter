@@ -1,7 +1,7 @@
 // Core Localization — English
 // Responsibility: English values for the AppLanguage contract.
 
-import '../app_language.dart';
+import 'package:flutter_production_starter/core/localization/app_language.dart';
 
 class EnLanguage extends AppLanguage {
   const EnLanguage();
@@ -48,4 +48,30 @@ class EnLanguage extends AppLanguage {
 
   @override
   String get toggleTheme => 'Toggle theme';
+
+  @override
+  String get errorTimeout => 'The connection timed out. Please try again.';
+
+  @override
+  String get errorNoConnection =>
+      'No internet connection. Please check your network and try again.';
+
+  @override
+  String get errorUnauthorized =>
+      'Your session has expired. Please log in again.';
+
+  @override
+  String get errorServer => 'Something went wrong. Please try again.';
+
+  @override
+  String get errorCancelled => 'The request was cancelled.';
+
+  @override
+  String get errorUnknown => 'An unexpected error occurred. Please try again.';
+
+  @override
+  String get loginInvalidCredentials => 'Incorrect email or password.';
+
+  @override
+  String homeGreeting(String name) => 'Hello, $name';
 }

@@ -7,8 +7,8 @@
 
 import 'package:flutter/widgets.dart';
 
-import 'languages/en_language.dart';
-import 'languages/vi_language.dart';
+import 'package:flutter_production_starter/core/localization/languages/en_language.dart';
+import 'package:flutter_production_starter/core/localization/languages/vi_language.dart';
 
 /// Supported locales. Drives persistence, the Flutter `Locale`, and the
 /// `AppLanguage` implementation lookup.
@@ -75,6 +75,18 @@ abstract class AppLanguage {
 
   // --- Shared ---
   String get toggleTheme;
+
+  // --- Errors (mapped from Failure, see failure_message.dart) ---
+  String get errorTimeout;
+  String get errorNoConnection;
+  String get errorUnauthorized;
+  String get errorServer;
+  String get errorCancelled;
+  String get errorUnknown;
+  String get loginInvalidCredentials;
+
+  // --- Home (user) ---
+  String homeGreeting(String name);
 
   /// Resolves the implementation for a given [AppLocale].
   static AppLanguage of(AppLocale locale) {

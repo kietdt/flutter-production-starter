@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'locale_cubit.dart';
+import 'package:flutter_production_starter/core/localization/cubit/locale_cubit.dart';
 
 /// A text button showing the active language code (EN/VI); tapping toggles it.
 class LanguageToggleButton extends StatelessWidget {

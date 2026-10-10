@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Keep Display Logic in State, Not in the Widget
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** Functions that format data or compute a display/fallback value belong in the `State` (or Model/Entity) as getters, not as helper methods inside the Widget. A widget's only job is to build the UI tree. This keeps the UI file "dumb" and centralizes display logic in one place.
 
 ### ❌ Bad Example

@@ -1,7 +1,7 @@
 // Core Localization — Vietnamese
 // Responsibility: Vietnamese values for the AppLanguage contract.
 
-import '../app_language.dart';
+import 'package:flutter_production_starter/core/localization/app_language.dart';
 
 class ViLanguage extends AppLanguage {
   const ViLanguage();
@@ -47,4 +47,30 @@ class ViLanguage extends AppLanguage {
 
   @override
   String get toggleTheme => 'Đổi giao diện';
+
+  @override
+  String get errorTimeout => 'Kết nối quá thời gian. Vui lòng thử lại.';
+
+  @override
+  String get errorNoConnection =>
+      'Không có kết nối mạng. Vui lòng kiểm tra mạng và thử lại.';
+
+  @override
+  String get errorUnauthorized =>
+      'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+
+  @override
+  String get errorServer => 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+
+  @override
+  String get errorCancelled => 'Yêu cầu đã bị huỷ.';
+
+  @override
+  String get errorUnknown => 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.';
+
+  @override
+  String get loginInvalidCredentials => 'Email hoặc mật khẩu không đúng.';
+
+  @override
+  String homeGreeting(String name) => 'Xin chào, $name';
 }

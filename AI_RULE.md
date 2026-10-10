@@ -4,8 +4,10 @@ This file contains custom architectural and coding rules for the project. Always
 
 This document is the human-readable mirror of the machine rules in `.cursor/rules/`. Every rule here has a matching `.mdc` file; keep the two in sync — when you add or change a rule in one place, update the other.
 
+**Enforcement.** Each rule says how it is enforced: an analyzer lint (`analysis_options.yaml`), `tool/check_architecture.sh` (grep checks run in CI before `flutter analyze`), or manual review. `custom_lint` is deliberately not used — it adds a dependency and a slow analyzer plugin, and grep covers what this starter needs. When a new rule can be checked mechanically, add it to the script and update its "Enforced by" note.
+
 ## 1. Class and Model Initialization
-_Source: `.cursor/rules/class-initialization.mdc`_
+_Source: `.cursor/rules/class-initialization.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** Use named parameters when initializing ANY class, model, entity, exception, or failure. This applies to all constructors across the project.
 
@@ -19,8 +21,9 @@ class UserModel {
 }
 
 class ServerException implements Exception {
-  final String message;
-  ServerException({this.message = 'Server Exception'});
+  final NetworkErrorCode type;
+  final int? statusCode;
+  const ServerException({required this.type, this.statusCode});
 }
 ```
 
@@ -35,7 +38,7 @@ class UserModel {
 ```
 
 ## 2. Model and Entity Separation
-_Source: `.cursor/rules/model-entity-separation.mdc`_
+_Source: `.cursor/rules/model-entity-separation.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** Models should NOT extend Entities. Models must be independent and include a `toEntity()` method to convert them to their corresponding Domain Entities.
 
@@ -63,7 +66,7 @@ class UserModel extends UserEntity {
 ```
 
 ## 3. Standardized Feature Status
-_Source: `.cursor/rules/feature-status.mdc`_
+_Source: `.cursor/rules/feature-status.mdc` · **Enforced by:** `tool/check_architecture.sh` (`== FeatureStatus.` outside `feature_status.dart`)_
 
 **Rule:** Use a common `FeatureStatus` enum for state management across all screens. Do NOT create abstract status classes for each feature (like `AuthLoading`, `AuthSuccess`, etc.).
 
@@ -86,7 +89,7 @@ class AuthSuccess extends AuthState { final UserEntity user; AuthSuccess(this.us
 ```
 
 ## 4. Main Screen Folder Placement
-_Source: `.cursor/rules/main-screen-placement.mdc`_
+_Source: `.cursor/rules/main-screen-placement.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** The main screen file of a feature should be placed directly inside the feature's root folder. Do not create a separate `view` folder for it if it is the main screen.
 
@@ -107,15 +110,18 @@ lib/feature/login/
 ```
 
 ## 5. Cubit and State Files Coupling
-_Source: `.cursor/rules/cubit-state-coupling.mdc`_
+_Source: `.cursor/rules/cubit-state-coupling.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** Use `part` and `part of` to link Cubit and State files. The Cubit file declares `part 'feature_state.dart';` and holds all imports; the State file declares `part of 'feature_cubit.dart';` and has no imports of its own.
+
+**State equality:** State classes extend `Equatable` and list every field in `props`, so emitting a state equal to the current one is skipped (no redundant rebuilds) and tests compare states by value. Import `package:equatable/equatable.dart` in the Cubit file — the State file has no imports.
 
 ### ✅ Good Example
 ```dart
 // feature_cubit.dart
+import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/entity/user_entity.dart';
+import 'package:flutter_production_starter/domain/entity/user_entity.dart';
 
 part 'feature_state.dart';
 
@@ -124,11 +130,16 @@ class FeatureCubit extends Cubit<FeatureState> { ... }
 // feature_state.dart
 part of 'feature_cubit.dart';
 
-class FeatureState { ... }
+class FeatureState extends Equatable {
+  final UserEntity? user;
+  ...
+  @override
+  List<Object?> get props => [user];
+}
 ```
 
 ## 6. Custom Logging
-_Source: `.cursor/rules/custom-logging.mdc`_
+_Source: `.cursor/rules/custom-logging.mdc` · **Enforced by:** lint `avoid_print` + `tool/check_architecture.sh` (`dart:developer` outside `AppLogger`)_
 
 **Rule:** Never use `print()` or `dart:developer`'s `log()` directly in feature or domain code. Always use the custom `AppLogger` utility in `lib/core/utils/app_logger.dart`.
 
@@ -149,12 +160,12 @@ log('This is a log message', name: 'SomeFeature');
 **Crash reporting:** `AppLogger.error(..., error: e)` is also forwarded to the `ErrorReporter` set via `AppLogger.setReporter(...)` (`lib/core/error/error_reporter.dart`) — always pass the caught object as `error:` (and `stackTrace:`) so it gets reported. Uncaught errors are routed there by `GlobalErrorHandler.install()` (`FlutterError.onError` + `PlatformDispatcher.onError`, `fatal: true`) and Cubit/Bloc errors by `AppBlocObserver`, both installed in `bootstrap()`. Don't set these handlers anywhere else.
 
 ## 7. Code Formatting
-_Source: `.cursor/rules/code-formatting.mdc`_
+_Source: `.cursor/rules/code-formatting.mdc` · **Enforced by:** CI `dart format --set-exit-if-changed lib test`_
 
 **Rule:** Always format Dart code after creating or modifying it (trailing commas for multiline formatting, standard Dart style). Ensure code is formatted before considering a task complete.
 
 ## 8. BlocBuilder / BlocListener Optimization
-_Source: `.cursor/rules/bloc-optimization.mdc`_
+_Source: `.cursor/rules/bloc-optimization.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** Always use `buildWhen` and `listenWhen` with `BlocBuilder`, `BlocListener`, or `BlocConsumer` to prevent unnecessary rebuilds or side-effects when unrelated parts of the state change.
 
@@ -174,7 +185,7 @@ BlocBuilder<AuthCubit, AuthState>(
 ```
 
 ## 9. Enum Mapping
-_Source: `.cursor/rules/enum-mapping.mdc`_
+_Source: `.cursor/rules/enum-mapping.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** When mapping enums to values (strings, integers, assets), do not use constructor parameters. Use a getter with an exhaustive `switch` inside the enum.
 
@@ -206,7 +217,7 @@ enum NetworkErrorCode {
 ```
 
 ## 10. Enum Boolean Getters
-_Source: `.cursor/rules/enum-boolean-getters.mdc`_
+_Source: `.cursor/rules/enum-boolean-getters.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** Do not compare an enum value against a specific case with `==` at the call site. Define `bool get isX` getters inside the enum and compare through them.
 
@@ -231,9 +242,9 @@ final loggedIn = authCubit.state.status == AppAuthStatus.authenticated;
 ```
 
 ## 11. Navigation via Coordinator
-_Source: `.cursor/rules/navigation-coordinator.mdc`_
+_Source: `.cursor/rules/navigation-coordinator.mdc` · **Enforced by:** `tool/check_architecture.sh` (`Navigator.`/`MaterialPageRoute` outside `app/coordinator/`)_
 
-**Rule:** Screen navigation is declared in one place — `lib/core/coordinator/coordinator.dart`. `Navigator.` and `MaterialPageRoute` may appear only inside `lib/core/coordinator/`. Features, pages and widgets express intent by calling a `Coordinator` method.
+**Rule:** Screen navigation is declared in one place — `lib/app/coordinator/coordinator.dart`. `Navigator.` and `MaterialPageRoute` may appear only inside `lib/app/coordinator/`. Features, pages and widgets express intent by calling a `Coordinator` method.
 
 ### ✅ Good Example
 ```dart
@@ -251,22 +262,22 @@ Navigator.of(context).push(
 Overlay helpers (`showDialog`, `showModalBottomSheet`) are allowed in widgets, but dismiss them with `Coordinator.pop(context)`.
 
 ## 12. Repository JSON Parsing
-_Source: `.cursor/rules/repository-json-parsing.mdc`_
+_Source: `.cursor/rules/repository-json-parsing.mdc` · **Enforced by:** `tool/check_architecture.sh` (`json['…']` in `lib/data/`) — delegation to `fromJson` is reviewed_
 
 **Rule:** Repositories must not parse raw JSON with `Map` keys directly (e.g. `response['key']`). Delegate JSON parsing to Data Models via `.fromJson`, keeping mapping logic in the model layer.
 
 ## 13. Memory Update
-_Source: `.cursor/rules/memory-update.mdc`_
+_Source: `.cursor/rules/memory-update.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
-**Rule:** After completing a task or significant feature, update the `MEMORY.md` file to reflect the current state of the project so context is maintained for future tasks.
+**Rule:** After completing a task or significant feature, update the `docs/MEMORY.md` file to reflect the current state of the project so context is maintained for future tasks.
 
 ## 14. Minimize Unnecessary Changes
-_Source: `.cursor/rules/minimize-unnecessary-changes.mdc`_
+_Source: `.cursor/rules/minimize-unnecessary-changes.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** When code is already working and stable, do not rewrite or restructure the original flow unless the new requirement truly requires it. Prefer additive, targeted changes over "clean rewrites" that risk breaking dependent features.
 
 ## 15. Avoid UI Workarounds
-_Source: `.cursor/rules/avoid-ui-workarounds.mdc`_
+_Source: `.cursor/rules/avoid-ui-workarounds.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** Do not use hacks such as constantly changing a `ValueKey` to force a full rebuild, or abusing Bloc/Cubit state to smuggle navigation parameters. Use proper mechanisms (navigation/router, real state fields).
 
@@ -281,12 +292,12 @@ SizedBox(key: ValueKey(type.code), height: h)
 ```
 
 ## 16. State Management Folder Naming
-_Source: `.cursor/rules/state-folder-naming.mdc`_
+_Source: `.cursor/rules/state-folder-naming.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** Separate UI, Bloc/Cubit and State into their own files. Name the folder holding the state-management classes `cubit/` when using a `Cubit` and `bloc/` when using a `Bloc`. Never name a folder `bloc/` while it contains a Cubit.
 
 ## 17. Type Safety and Linter Cleanliness
-_Source: `.cursor/rules/type-safety.mdc`_
+_Source: `.cursor/rules/type-safety.mdc` · **Enforced by:** `strict-casts`, `strict-raw-types`, `strict-inference`, lint `avoid_dynamic_calls`, `flutter analyze` in CI_
 
 **Rule:** Do not access properties or call methods on a `dynamic` value without a type check. Cast explicitly, check null, use safe parse methods, and resolve linter warnings (including redundant casts).
 
@@ -302,7 +313,7 @@ final id = to != null ? to['id'] : '';
 ```
 
 ## 18. Do Not Pass Instance Data Back Into Its Own Methods
-_Source: `.cursor/rules/instance-data-no-redundant-params.mdc`_
+_Source: `.cursor/rules/instance-data-no-redundant-params.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** When a method formats or computes something from the object's own fields, use the instance variables directly (ideally as a `get` property) rather than accepting them as parameters. If the data belongs to the instance, the caller should not pass it back.
 
@@ -314,22 +325,22 @@ final display = item.departureDateDisplay;
 ```
 
 ## 19. Handle Widget Visibility in newInstance
-_Source: `.cursor/rules/widget-visibility-newinstance.mdc`_
+_Source: `.cursor/rules/widget-visibility-newinstance.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** When a section can be fully hidden based on Bloc/Cubit state, decide whether to build it inside the `newInstance` factory (using `Builder` + `context.watch`) instead of always building the widget and returning `SizedBox.shrink()` from `build`.
 
 ## 20. Granular BlocBuilders
-_Source: `.cursor/rules/granular-bloc-builders.mdc`_
+_Source: `.cursor/rules/granular-bloc-builders.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** When a large widget depends on several state fields, do not wrap the whole UI in a single `BlocBuilder` with a meaningless `buildWhen`. Split the UI into smaller widgets, each with its own `BlocBuilder` and a `buildWhen` comparing only the field it cares about.
 
 ## 21. Use Entities (Not Hardcoded Enums) for Dynamic UI Lists
-_Source: `.cursor/rules/dynamic-list-use-entity.mdc`_
+_Source: `.cursor/rules/dynamic-list-use-entity.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** When rendering a list of options that depends on the API or can change over time, do not model it as a hardcoded `enum`. Create an Entity in `domain/`, store a `List<Entity>` in state, and render from that list. Reserve enums for genuinely fixed, client-known sets.
 
 ## 22. Keep Display Logic in State, Not in the Widget
-_Source: `.cursor/rules/ui-logic-in-state.mdc`_
+_Source: `.cursor/rules/ui-logic-in-state.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** Functions that format data or compute a display/fallback value belong in the `State` (or Model/Entity) as getters, not as helper methods inside the Widget. The widget's only job is to build UI.
 
@@ -343,7 +354,7 @@ class MyState extends Equatable {
 ```
 
 ## 23. Declare Function Types With void
-_Source: `.cursor/rules/void-function-type.mdc`_
+_Source: `.cursor/rules/void-function-type.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** When a function type returns nothing, put `void` before `Function`. A bare `Function(...)` returns `dynamic`.
 
@@ -354,17 +365,17 @@ void doSomething(void Function(String) callback) {}
 ```
 
 ## 24. Prefer Private Build Methods for Tiny UI Pieces
-_Source: `.cursor/rules/small-ui-use-methods.mdc`_
+_Source: `.cursor/rules/small-ui-use-methods.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** When a small UI component serves only the current widget and is not reused, prefer a private `_buildX(...)` method returning a `Widget` inside the parent rather than extracting a separate `StatelessWidget`. (Non-widget helper classes still follow the one-class-per-file rule.)
 
 ## 25. Append New Locale Keys at the End
-_Source: `.cursor/rules/append-locale-keys.mdc`_
+_Source: `.cursor/rules/append-locale-keys.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** When adding a new localization key, always append it at the end of the file (before the closing `}`) instead of inserting between existing keys. This minimizes merge conflicts.
 
 ## 26. Screen Initialization With Injection
-_Source: `.cursor/rules/screen-newinstance-injection.mdc`_
+_Source: `.cursor/rules/screen-newinstance-injection.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** Do not use the legacy `static Route route()` pattern. Expose screens through `static Widget newInstance()`, and call the feature's DI setup at the start of that method, before creating the `BlocProvider`.
 
@@ -380,7 +391,7 @@ static Widget newInstance() {
 ```
 
 ## 27. Use Gap Instead of SizedBox for Spacing
-_Source: `.cursor/rules/use-gap-not-sizedbox.mdc`_
+_Source: `.cursor/rules/use-gap-not-sizedbox.mdc` · **Enforced by:** `tool/check_architecture.sh` (single-line child-less `SizedBox(height|width: …)`; multi-line ones are reviewed)_
 
 **Rule:** Use `Gap(...)` (from the `gap` package) for spacing between widgets in a `Column`/`Row` instead of `SizedBox(height/width: ...)`. `Gap` infers the parent's axis automatically.
 
@@ -390,7 +401,7 @@ Column(children: [Text('Title'), Gap(16), Text('Description')])
 ```
 
 ## 28. Explicit Types for Non-Obvious Local Variables
-_Source: `.cursor/rules/explicit-local-types.mdc`_
+_Source: `.cursor/rules/explicit-local-types.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** When a local variable's type is not obvious from the right-hand side (conditionals, `.first`, `.firstWhere`, nullable expressions), declare the type explicitly (including `?` when nullable) instead of relying on `final`/`var` inference.
 
@@ -401,19 +412,21 @@ final TicketModel? firstTicket =
 ```
 
 ## 29. Pass Only What a Method Needs
-_Source: `.cursor/rules/pass-only-needed-data.mdc`_
+_Source: `.cursor/rules/pass-only-needed-data.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** A helper method should accept exactly the data it uses (e.g. `List<TicketEntity> tickets`) instead of the whole Bloc/Cubit `State`. Passing the entire state couples the method to the full state shape and hurts reuse/testability. If another field is needed, read it from `context.read<Cubit>().state` inside the method.
 
 ## 30. One Top-level Class Per File
-_Source: `.cursor/rules/one-class-per-file.mdc`_
+_Source: `.cursor/rules/one-class-per-file.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** Do not put multiple top-level classes in one file. Non-widget helper classes (`CustomClipper`, `CustomPainter`, `Delegate`, plain helpers) must live in their own file.
 
 **Exception:** If the helper serves only one widget and is not reused, it may stay `private` (`_`-prefixed) in the same file as that widget. Extract it to its own public file only once it is reused elsewhere.
 
+**Exception (sealed hierarchies):** a `sealed` class and its subtypes must live in the same library, so they share one file (e.g. `Failure` and its subtypes in `core/error/failures.dart`).
+
 ## 31. Use MapParser Extension for Safe JSON Parsing
-_Source: `.cursor/rules/map-parser-json.mdc`_
+_Source: `.cursor/rules/map-parser-json.mdc` · **Enforced by:** `tool/check_architecture.sh` (`json['…']` in `lib/data/`)_
 
 **Rule:** When parsing values out of a JSON/`Map` (typically in a Model's `fromJson`), always use the `MapParser` extension in `lib/core/utils/map_ext.dart` instead of raw bracket access with manual casts (`json['key'] as int? ?? 0`). The helpers handle type coercion, null safety and edge cases in one place. Available: `parseInt`, `parseDouble`, `parseString`, `parseBool` (+ `*OrNull` variants), `parseDate`/`parseDateISO8601`/`parseSecondToDate`, `parseMap`/`parseMapOrNull`, `parseList<T>`/`parseListOrNull<T>`/`parseListMap`/`parseListString`, and `tryParseRaw<T>`.
 
@@ -433,7 +446,7 @@ tags: json.parseListOrNull<String>('tags'),
 This complements rule #12: repositories delegate parsing to Models via `.fromJson`, and inside those `fromJson` methods the parsing itself goes through `MapParser`.
 
 ## 32. Read Strings via `context.l10n`
-_Source: `.cursor/rules/localization-context.mdc`_
+_Source: `.cursor/rules/localization-context.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
 **Rule:** Widgets read localized strings with `context.l10n.<key>` (`lib/core/localization/app_language_context.dart`). It resolves the language from the nearest `Localizations` (driven by `MaterialApp.locale` ← `LocaleCubit`) and registers a dependency, so the widget rebuilds when the language changes — even inside a `const` subtree. There is no static/global "current language": a static read does not rebuild, so visible text would stay in the old language.
 
@@ -453,27 +466,83 @@ errorText: state.email.errorText(context.l10n), // String? errorText(AppLanguage
 `MaterialApp.title` sits above `Localizations`, so use `onGenerateTitle: (context) => context.l10n.appTitle`.
 
 ## 33. `copyWith` for Nullable Fields Uses `Nullable<T?>`
-_Source: `.cursor/rules/copywith-nullable-fields.mdc`_
+_Source: `.cursor/rules/copywith-nullable-fields.mdc` · **Enforced by:** manual review (no reliable automated check)_
 
-**Rule:** In a state's `copyWith`, every **nullable** field takes a `Nullable<T?>?` (`lib/core/utils/nullable.dart`) instead of `T?`. With `field ?? this.field` a `null` argument means "keep", so the field can never be cleared — e.g. a stale `errorMessage` survives a retry. Non-nullable fields keep the plain `T?` + `??` form.
+**Rule:** In a state's `copyWith`, every **nullable** field takes a `Nullable<T?>?` (`lib/core/utils/nullable.dart`) instead of `T?`. With `field ?? this.field` a `null` argument means "keep", so the field can never be cleared — e.g. a stale `failure` survives a retry. Non-nullable fields keep the plain `T?` + `??` form.
 
-Call sites: omit to keep, `const Nullable(null)` to clear, `Nullable(value)` to set. `Nullable`'s constructor is positional on purpose — the one exception to the named-params rule. Clear transient fields (errors) when a new attempt starts (the `loading` emit).
+Call sites: omit to keep, `const Nullable(null)` to clear, `Nullable(value)` to set. `Nullable`'s constructor is positional on purpose — the one exception to the named-params rule. Clear transient fields (failures) when a new attempt starts (the `loading` emit).
 
 ### ❌ Bad Example
 ```dart
-LoginState copyWith({String? errorMessage}) =>
-    LoginState(errorMessage: errorMessage ?? this.errorMessage); // can't clear
+LoginState copyWith({Failure? failure}) =>
+    LoginState(failure: failure ?? this.failure); // can't clear
 
-emit(state.copyWith(status: FeatureStatus.loading)); // old error still there
+emit(state.copyWith(status: FeatureStatus.loading)); // old failure still there
 ```
 
 ### ✅ Good Example
 ```dart
-LoginState copyWith({Nullable<String?>? errorMessage}) => LoginState(
-      errorMessage:
-          errorMessage != null ? errorMessage.value : this.errorMessage,
+LoginState copyWith({Nullable<Failure?>? failure}) => LoginState(
+      failure: failure != null ? failure.value : this.failure,
     );
 
-emit(state.copyWith(status: FeatureStatus.loading, errorMessage: const Nullable(null)));
-emit(state.copyWith(status: FeatureStatus.failure, errorMessage: Nullable(e.message)));
+emit(state.copyWith(status: FeatureStatus.loading, failure: const Nullable(null)));
+emit(state.copyWith(status: FeatureStatus.failure, failure: Nullable(e)));
+```
+
+## 34. Layer Dependencies
+_Source: `.cursor/rules/layer-dependencies.mdc` · **Enforced by:** `tool/check_architecture.sh` (CI) + lint `always_use_package_imports`_
+
+**Rule:** Imports must follow the dependency table. Always use `package:flutter_production_starter/...` imports so boundaries are greppable.
+
+| Layer | May import |
+|---|---|
+| `core` | `core` + external packages only |
+| `domain` | `domain`, `core/error`, `core/utils` |
+| `data` | `data`, `domain`, `core` |
+| `feature/<x>` | itself, `domain`, `core`, `app/coordinator`, `app/auth`; `app/di` **only** from `*_page.dart`; `feature/<x>/di/` may also import `data` |
+| `app` | everything (composition: `bootstrap`, `MyApp`, DI, `AuthGate`, `Coordinator`, `AppAuthCubit`) |
+| `main*.dart` | `app/bootstrap.dart`, `core/config` |
+
+Forbidden: feature → another feature (use `Coordinator`), feature → `data` outside `feature/<x>/di/`, `core` → any higher layer. The `app/coordinator ↔ <x>_page.dart` cycle is intentional.
+
+### ❌ Bad Example
+```dart
+// lib/core/router/app_router.dart
+import 'package:flutter_production_starter/feature/home/home.dart'; // core → feature
+```
+
+### ✅ Good Example
+```dart
+// lib/app/router/auth_gate.dart
+import 'package:flutter_production_starter/feature/home/home.dart'; // app wires features
+```
+
+## 35. Error Model
+_Source: `.cursor/rules/error-model.mdc` · **Enforced by:** lint `only_throw_errors` — the rest is reviewed_
+
+**Rule:** Errors travel `DioException → ServerException → Failure → text`, and only become text in the widget.
+
+1. `NetworkClient` maps every `DioException` to a `ServerException` (`type`, `statusCode`, `serverCode`, `serverMessage`, `cause`) with an exhaustive `switch` — no `default`.
+2. Repositories throw `e.toFailure(stackTrace: st)`; any other error becomes `UnknownFailure(cause: e, stackTrace: st)` — never swallow the cause.
+3. Cubits keep the `Failure` in state (`Nullable<Failure?>`, cleared on `loading`); widgets show `failure.message(context.l10n)`.
+
+`Failure` is `sealed` + `implements Exception`: `NetworkFailure(reason)`, `UnauthorizedFailure` (401), `ServerFailure(statusCode, serverCode, serverMessage)`, `CancelledFailure`, `UnknownFailure(cause, stackTrace)`. `core/error/` holds no user-facing text. Business errors are read from `ServerFailure.serverCode` (project enum), not new subtypes. The backend error-body format lives only in `NetworkClient._parseErrorBody`; `serverMessage` is shown only when `AppConfig.useServerErrorMessage` is on.
+
+### ❌ Bad Example
+```dart
+} catch (_) {
+  throw const UnknownFailure(); // root cause lost
+}
+emit(state.copyWith(errorMessage: Nullable(e.message))); // English, never localized
+```
+
+### ✅ Good Example
+```dart
+} on ServerException catch (e, st) {
+  throw e.toFailure(stackTrace: st);
+} catch (e, st) {
+  throw UnknownFailure(cause: e, stackTrace: st);
+}
+emit(state.copyWith(status: FeatureStatus.failure, failure: Nullable(e)));
 ```

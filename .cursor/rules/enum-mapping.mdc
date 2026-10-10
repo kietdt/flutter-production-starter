@@ -5,6 +5,8 @@ globs: *.dart
 
 # Enum Mapping
 
+> **Enforced by:** manual review (no reliable automated check)
+
 **Rule:** When mapping enums to specific values (like strings or integers), do not use constructor parameters. Instead, use a getter with an exhaustive `switch` statement to return the corresponding values.
 
 ### ✅ Good Example
